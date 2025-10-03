@@ -1,0 +1,19 @@
+image: maven.lan:8082/ubuntu:22.04
+
+stages:
+ - deploy
+
+deploy:
+ stage: deploy
+ only:
+ - master
+ before_script:
+ - 'command -v ssh-agent >/dev/null || ( apt-get update -y && apt-get install openssh-client -y )'
+ - eval $(ssh-agent -s)
+ - echo "$SSH_ANSIBLE" | tr -d '\r' | ssh-add - > /dev/null
+ - mkdir -p ~/.ssh
+ - chmod 700 ~/.ssh
+ - ssh-keyscan $ANSIBLE_HOST >> ~/.ssh/known_hosts
+ - chmod 644 ~/.ssh/known_hosts
+ script:
+ - scp -r roles/ playbooks/ hosts.ini ansible.cfg $ANSIBLE_USER@$ANSIBLE_HOST:~/ansible-playbooks

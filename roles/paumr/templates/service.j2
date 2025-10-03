@@ -1,0 +1,12 @@
+[Unit]
+Description=PAUMR
+After=multi-user.target
+[Service]
+Type=simple
+Environment="PYTHONPATH=/opt/paumr"
+User=altar
+Group=altar
+ExecStart=/opt/paumr/venv/bin/daphne paumr.fir.asgi:application
+WorkingDirectory=/opt/paumr/paumr
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,88 @@
+---
+# tasks file for dashboard_plugins
+- name: Копируем старый конфиг psus-app
+ copy:
+ src: /opt/psus/psus-db/data/wazuh/config/wazuh.yml
+ dest: /tmp/wazuh.yml
+ remote_src: true
+ ignore_errors: true  
+
+- name: Копируем архив с программой security-plugin
+ copy:
+ src: /tmp/security_plugin.zip
+ dest: /home/altar/
+ become_user: altar
+
+- name: Копируем архив с программой psus-app
+ copy:
+ src: /tmp/psus_app.zip
+ dest: /home/altar/
+ become_user: altar
+
+- name: Копируем архив с программой psus-app-ad
+ copy:
+ src: /tmp/psus-app-ad.zip
+ dest: /home/altar/
+ become_user: altar
+
+- name: Удаление старого плагина psus-app
+ shell:
+ cmd: bin/opensearch-dashboards-plugin remove psus
+ chdir: /opt/{{ service }}/dashboard
+ become_user: altar
+ ignore_errors: true
+ 
+- name: Установка нового плагина psus-app
+ shell:
+ cmd: bin/opensearch-dashboards-plugin install file:///home/altar/psus_app.zip
+ chdir: /opt/{{ service }}/dashboard
+ become_user: altar
+
+- name: Возвращаем старый конфиг
+ copy:
+ src: /tmp/wazuh.yml
+ dest: /opt/{{ service }}/dashboard/data/wazuh/config/
+ remote_src: true
+ ignore_errors: true
+
+- name: Добавление файла локализации
+ copy:
+ src: /tmp/ru_RU.json
+ dest: /opt/{{ service }}/dashboard/plugins/psus/translations/ru_RU.json
+ become_user: altar
+
+- name: Добавление файла .i18nrc.json
+ copy:
+ src: /tmp/.i18nrc.json
+ dest: /opt/{{ service }}/dashboard/plugins/psus/
+ become_user: altar
+
+- name: Удаление старого плагина psus-app-ad
+ shell:
+ cmd: bin/opensearch-dashboards-plugin remove anomalyDetectionDashboards
+ chdir: /opt/{{ service }}/dashboard
+ become_user: altar
+ ignore_errors: true
+ 
+- name: Установка нового плагина psus-app-ad
+ shell:
+ cmd: bin/opensearch-dashboards-plugin install file:///home/altar/psus-app-ad.zip
+ chdir: /opt/{{ service }}/dashboard
+ become_user: altar
+ notify:
+ - Перезапуск dashboard
+
+#- name: Удаление старого плагина security
+# shell:
+# cmd: bin/opensearch-dashboards-plugin remove securityDashboards
+# chdir: /opt/{{ service }}/dashboard
+# become_user: altar
+# ignore_errors: true
+#
+#- name: Установка нового плагина security
+# shell:
+# cmd: bin/opensearch-dashboards-plugin install file:///home/altar/security_plugin.zip
+# chdir: /opt/{{ service }}/dashboard
+# become_user: altar
+
+

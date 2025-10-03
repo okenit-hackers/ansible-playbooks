@@ -1,0 +1,10 @@
+---
+# handlers file for paumr
+- name: Запуск ПАУМР
+ service:
+ name: "{{ item }}"
+ state: restarted
+ enabled: yes
+ with_items:
+ - "paumr"
+ - "paumr-celery"

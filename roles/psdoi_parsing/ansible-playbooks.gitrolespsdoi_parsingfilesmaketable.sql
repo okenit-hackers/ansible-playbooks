@@ -1,0 +1,3 @@
+CREATE DATABASE psdoi;
+CREATE USER psdoi WITH PASSWORD 'password';
+GRANT ALL ON DATABASE psdoi TO psdoi;

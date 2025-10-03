@@ -1,0 +1,87 @@
+---
+- name: Установка необходимых пакетов
+ apt:
+ pkg:
+ - python3
+ - gcc
+ - g++
+ - make
+ - libc6-dev
+ - curl
+ - automake
+ - autoconf
+ - libtool
+ - libssl-dev
+ - cmake
+ - build-essential
+ state: present
+
+- name: Создание папки /home/altar/distr/psus-manager
+ file:
+ path: /home/altar/distr/psus-manager
+ state: directory
+
+- name: Копируем архив на сервер
+ copy:
+ src: /tmp/manager_build.tar.gz
+ dest: /home/altar/distr/psus-manager/manager_build.tar.gz
+ become: true
+
+- name: Разархивируем
+ unarchive:
+ src: /home/altar/distr/psus-manager/manager_build.tar.gz
+ dest: /home/altar/distr/psus-manager
+ remote_src: yes
+
+- name: Смена папки установки агента
+ lineinfile:
+ path: /home/altar/distr/psus-manager/etc/preloaded-vars_manager.conf
+ regexp: '^USER_DIR='
+ line: "USER_DIR=/opt/{{ service }}/manager"
+
+- name: Выбор предзагруженных переменных для manager
+ shell: cd /home/altar/distr/psus-manager && mv etc/preloaded-vars_manager.conf etc/preloaded-vars.conf
+
+- name: Запуск скрипта установки
+ shell: cd /home/altar/distr/psus-manager && bash ./install.sh
+ become: true
+
+- name: Удаление старого файла сервиса
+ file:
+ path: /etc/systemd/system/psus-manager.service
+ state: absent
+
+- name: Создание файла сервиса
+ file:
+ path: /etc/systemd/system/{{ service }}-manager.service
+ state: touch
+ #shell: mv /etc/systemd/system/psus-manager.service /etc/systemd/system/{{ service }}-manager.service
+
+- name: Изменение файла сервиса
+ blockinfile:
+ path: /etc/systemd/system/{{ service }}-manager.service
+ block: |
+  [Unit]
+  Description={{ service }} manager
+  Wants=network-online.target
+  After=network.target network-online.target
+  [Service]
+  Type=forking
+  LimitNOFILE=65536
+  ExecStart=/usr/bin/env /opt/{{ service }}/manager/bin/psus-control start
+  ExecStop=/usr/bin/env /opt/{{ service }}/manager/bin/psus-control stop
+  ExecReload=/usr/bin/env /opt/{{ service }}/manager/bin/psus-control reload
+  KillMode=None
+  RemainAfterExit=yes
+  [Install]
+  WantedBy=multi-user.target
+  
+- name: Обновление systemctl
+ shell: systemctl daemon-reload
+ notify:
+ - Перезапуск сервиса менеджера
+ 
+- name: Удаление папки /home/altar/distr/psus-manager
+ file:
+ path: /home/altar/distr/psus-manager
+ state: absent

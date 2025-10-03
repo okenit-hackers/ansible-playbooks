@@ -1,0 +1,7 @@
+---
+# handlers file for filebeat
+- name: Запуск filebeat
+ service:
+ name: filebeat-{{ type }}.service
+ state: restarted
+ enabled: yes

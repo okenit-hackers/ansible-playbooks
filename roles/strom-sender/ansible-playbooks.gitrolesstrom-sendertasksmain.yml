@@ -1,0 +1,40 @@
+---
+- name: Остановка stromSender
+ shell:
+ cmd: "./ScanSendService -m:3"
+ chdir: /opt/stromSender
+ become: yes
+ ignore_errors: true
+
+- name: Удаление старой программы
+ file:
+ path: /opt/stromSender/
+ state: absent
+
+- name: Копирование программы на машину
+ copy:
+ src: /tmp/stromSender.zip
+ dest: /tmp/stromSender.zip
+
+- name: Создание папки для установки
+ file:
+ path: /opt/stromSender/
+ state: directory
+
+- name: Разархивирование строма
+ unarchive:
+ src: /tmp/stromSender.zip
+ dest: /opt/stromSender/
+
+- name: Копируем конфигурационный файл scan_folder.lst
+ template:
+ src: scan_folder.lst.j2
+ dest: /opt/stromSender/scan_folder.lst
+ vars:
+ paumr_ip: "{{ paumr_ip }}"
+
+- name: Запуск stromSender
+ shell:
+ cmd: "./ScanSendService"
+ chdir: /opt/stromSender
+ become: yes

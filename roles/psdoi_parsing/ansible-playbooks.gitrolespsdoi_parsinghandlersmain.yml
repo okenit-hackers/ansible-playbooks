@@ -1,0 +1,6 @@
+---
+# handlers file for psdoi_parsing
+- name: Запуск сервиса psdoi-parsing
+ service:
+ name: psdoi-parsing
+ state: restarted

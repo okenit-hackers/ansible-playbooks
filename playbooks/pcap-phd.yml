@@ -1,0 +1,15 @@
+---
+- name: Установка pov_agent
+ hosts: '{{ hosts }}'
+ become: true
+ pre_tasks:
+ - name: Загрузка pcap_phd.tar.gz
+  get_url:
+   url: http://192.168.5.119:8000/pcap_phd.tar.gz
+   dest: /tmp/pcap_phd.tar.gz
+  delegate_to: ansible_host
+
+
+ roles:
+  - ../roles/pcap_phd
+

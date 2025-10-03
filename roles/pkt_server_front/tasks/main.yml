@@ -1,0 +1,57 @@
+---
+# tasks file for pkt_server_front
+- name: Копируем архив с установочными файлами nginx
+ copy:
+ src: /tmp/nginx.zip
+ dest: /tmp/nginx.zip
+
+- name: Разархивируем nginx
+ unarchive:
+ src: /tmp/nginx.zip
+ dest: /tmp/
+
+- name: Установка nginx
+ shell: dpkg -i /tmp/nginx/*.deb
+ ignore_errors: true
+ become: yes
+
+- name: Копируем архив со статикой pkt-server
+ copy:
+ src: /tmp/pkt_server_front_build.tar.gz
+ dest: /var/www/html/pkt_server_front_build.tar.gz
+
+- name: Удаление старого билда
+ file:
+ path: /var/www/html/pkt-server
+ state: absent
+
+- name: Создание папки под static-files paumr
+ file:
+ path: /var/www/html/pkt-server
+ state: directory
+
+- name: Разархивируем статику
+ unarchive:
+ src: /var/www/html/pkt_server_front_build.tar.gz
+ dest: /var/www/html/pkt-server/
+ remote_src: true
+
+- name: Удалим установочные файлы
+ file:
+ path:
+  - /var/www/html/pkt_server_front_build.tar.gz
+  - /tmp/nginx.zip
+ state: absent
+ notify:
+ - Перезапуск NGINX
+
+
+- name: Копируем конфигурационный файл nginx
+ template:
+ src: nginx.conf.j2
+ dest: /etc/nginx/sites-enabled/default
+ vars:
+ server_ip: "{{ ansible_host }}"
+
+
+

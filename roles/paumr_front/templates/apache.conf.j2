@@ -1,0 +1,53 @@
+<VirtualHost *:443>
+ SSLEngine on
+ SSLCertificateFile /opt/paumr/venv/lib/python3.7/site-packages/sslserver/certs/development.crt
+ SSLCertificateKeyFile /opt/paumr/venv/lib/python3.7/site-packages/sslserver/certs/development.key
+
+ ServerName 192.168.6.247
+
+ DocumentRoot /var/www/html/paumr
+ DirectoryIndex index.html
+
+ <Directory /var/www/html/paumr>
+  Require all granted
+  AllowOverride All
+  Require all granted
+
+  RewriteEngine On
+  RewriteBase /
+  RewriteRule ^index\.html$ - [L]
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{REQUEST_FILENAME} !-d
+  RewriteRule . /index.html [L]
+ </Directory>
+
+ LimitRequestBody 104857600
+
+ # Proxy settings for WebSocket
+ ProxyRequests Off
+ ProxyPreserveHost On
+ ProxyVia Full
+ ProxyPass /ws ws://localhost:8000/ws
+ ProxyPassReverse /ws ws://localhost:8000/ws
+
+ # Proxy settings for API and Admin
+ ProxyPass /api http://localhost:8000/api
+ ProxyPassReverse /api http://localhost:8000/api
+
+ ProxyPass /api-auth http://localhost:8000/api-auth
+ ProxyPassReverse /api-auth http://localhost:8000/api-auth
+
+ ProxyPass /admin http://localhost:8000/admin
+ ProxyPassReverse /admin http://localhost:8000/admin
+
+ # Static and media files
+ Alias /media /opt/paumr/paumr/media
+ <Directory /opt/paumr/paumr/media>
+  Require all granted
+ </Directory>
+
+ Alias /static /opt/paumr/paumr/static
+ <Directory /opt/paumr/paumr/static>
+  Require all granted
+ </Directory>
+</VirtualHost>

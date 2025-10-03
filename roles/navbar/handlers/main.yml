@@ -1,0 +1,7 @@
+---
+# handlers file for navbar
+- name: Перезапуск NGINX
+ service:
+ name: nginx
+ state: restarted
+ enabled: yes

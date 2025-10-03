@@ -1,0 +1,6 @@
+---
+# handlers file for webmap
+- name: Перезапуск сервиса webmap
+ service:
+ name: webmap
+ state: restarted

@@ -1,0 +1,89 @@
+---
+# tasks file for psdoi_parsing
+- name: Удаление старых установочных пакетов
+ file:
+ path: /tmp/psdoi_parsing
+ state: absent
+
+- name: Создание временной папки для установки
+ file:
+ path: /tmp/psdoi_parsing
+ state: directory
+
+
+- name: Копируем архив с программой
+ copy:
+ src: /tmp/psdoi-parsing.tar.gz
+ dest: /tmp/psdoi-parsing.tar.gz
+ owner: altar
+ group: altar
+ become_user: altar
+
+- name: Разархивируем программу в созданную папку /tmp/psdoi_parsing
+ unarchive:
+ src: /tmp/psdoi-parsing.tar.gz
+ dest: /tmp/psdoi_parsing
+ owner: altar
+ group: altar
+ remote_src: yes
+
+- name: Удаление старой версии программы
+ file:
+ path: /opt/psdoi_parsing
+ state: absent
+
+- name: Создадим папку /opt/psdoi-parsing
+ file:
+ path: /opt/psdoi_parsing
+ state: directory
+ owner: altar
+ group: altar
+
+- name: Создаем директории в папке /opt
+ file:
+ path: /opt/psdoi_parsing/static
+ state: directory
+ owner: altar
+ group: altar
+
+- name: Создадим venv для нашей программы
+ shell:
+ cmd: python3 -m venv venv
+ chdir: /opt/psdoi_parsing
+ become_user: altar
+
+- name: Установка зависимостей в venv
+ shell:
+ cmd: source venv/bin/activate && pip3 install /tmp/psdoi_parsing/pip*.whl --force-reinstall && pip3 install /tmp/psdoi_parsing/*.whl --force-reinstall
+ chdir: /opt/psdoi_parsing
+ become_user: altar
+
+- name: Удалим сервис для запуска программы в фоне
+ file:
+ path: /etc/systemd/system/psdoi-parsing.service
+ state: absent
+
+- name: Создадим сервис для запуска программы в фоне
+ file:
+ path: /etc/systemd/system/psdoi-parsing.service
+ state: touch
+ notify:
+ - Запуск сервиса psdoi-parsing
+
+- name: Заполняем его
+ blockinfile:
+ path: /etc/systemd/system/psdoi-parsing.service
+ block: |
+  [Unit]
+  Description=PSDOI-Parsing
+  After=multi-user.target
+  [Service]
+  LimitNOFILE=1048576
+  LimitNOFILESoft=1048576
+  Type=simple
+  ExecStart=/opt/psdoi_parsing/venv/bin/python3 /opt/psdoi_parsing/venv/lib/python3.7/site-packages/psdoi_parsing/app/main.py
+  WorkingDirectory=/opt/psdoi_parsing/
+  [Install]
+  WantedBy=multi-user.target
+
+

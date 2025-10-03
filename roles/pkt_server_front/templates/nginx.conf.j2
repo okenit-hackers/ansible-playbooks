@@ -1,0 +1,38 @@
+# API ПОВ-Сервера
+upstream pkt_api {
+ server localhost:8081;
+}
+
+# API PCAP-ПХД
+upstream pcap_api {
+ server localhost:8086;
+}
+
+# Общая конфигурация
+server {
+ listen 81;
+ listen [::]:81;
+
+ root /var/www/html/pkt-server;
+ index index.html;
+
+ server_name {{ server_ip }};
+
+ location / {
+  try_files $uri $uri/ /index.html;
+ }
+
+ # Внутренний loсation для эндпоинта проверки сессии API ПОВ-Сервера
+ location /auth {
+  internal;
+
+  proxy_set_header Host $http_host;
+  proxy_buffering off;
+  proxy_pass http://pkt_api/api/v1/user/health_check/;
+
+  # Включить, если поднадобится передача IP на эндпоинты:
+  #proxy_set_header X-Real-IP $remote_addr;
+  #proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+  #proxy_set_header X-Forwarded-Proto $scheme;
+ }
+}

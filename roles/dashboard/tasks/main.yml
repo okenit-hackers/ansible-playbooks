@@ -1,0 +1,125 @@
+---
+- name: Копирование opensearch-dashboards.yml
+ copy:
+ src: /opt/{{ service }}/dashboard/config/opensearch_dashboards.yml
+ dest: /tmp/opensearch_dashboards.yml
+ remote_src: yes
+ ignore_errors: true
+ 
+- name: Копирование wazuh.yml
+ copy:
+ src: /opt/{{ service }}/dashboard/data/wazuh/config/wazuh.yml
+ dest: /tmp/wazuh.yml
+ remote_src: yes
+ ignore_errors: true
+
+- name: Удаление старой папки с dashboard
+ file:
+ path: /opt/{{ service }}/dashboard
+ state: absent
+
+- name: Создание папки /opt/psus
+ file:
+ path: /opt/{{ service }}
+ state: directory
+
+- name: Копируем архив с программой
+ copy:
+ src: /tmp/dashboard.tar.gz
+ dest: /opt/{{ service }}/dashboard.tar.gz
+ become: true
+
+
+- name: Создание папки dashboard
+ file:
+ path: /opt/{{ service }}/dashboard
+ state: directory
+ 
+- name: Разархивируем программу в созданную папку /opt/{{ service }}/dashboard
+ unarchive:
+ src: /opt/{{ service }}/dashboard.tar.gz
+ dest: /opt/{{ service }}/dashboard/
+ remote_src: yes
+ 
+- name: Смена владельца папки
+ file:
+ path: /opt/{{ service }}/dashboard
+ owner: altar
+ group: altar
+ recurse: yes
+ state: directory
+ become: true
+ 
+- name: Удаляем архив
+ file:
+ path: /opt/{{ service }}/dashboard.tar.gz
+ state: absent
+ 
+- name: Создаем сервис для запуска dashboard
+ file:
+ path: /etc/systemd/system/dashboard.service
+ state: touch
+ 
+- name: Заполняем его
+ blockinfile:
+ path: /etc/systemd/system/dashboard.service
+ block: |
+   [Unit]
+   Description=dashboard
+
+   [Service]
+   Type=simple
+   User=altar
+   Group=altar
+   ExecStart=/opt/{{ service }}/dashboard/bin/opensearch-dashboards
+   WorkingDirectory=/opt/{{ service }}/dashboard
+
+   [Install]
+   WantedBy=multi-user.target
+  
+- name: Копирование opensearch-dashboards.yml
+ copy:
+ src: /tmp/opensearch_dashboards.yml
+ dest: /opt/{{ service }}/dashboard/config/opensearch_dashboards.yml
+ remote_src: yes
+ ignore_errors: true
+
+- name: Создание папки для конфига wazuh.yml
+ file:
+ state: directory
+ path: /opt/{{ service }}/dashboard/data/wazuh/config/
+
+- name: Добавление строчек в конфиг
+ blockinfile:
+ path: /opt/{{ service }}/dashboard/config/opensearch_dashboards.yml
+ block: |
+   i18n.locale: "ru_RU"
+   #opensearchDashboards.branding:
+   #  logo:
+   #  defaultUrl: "http://localhost:5601/ui/assets/mikhail_transparent.png"
+   #  darkModeUrl: "http://localhost:5601/ui/assets/logo_reports.png"
+   #  mark:
+   #  defaultUrl: "http://localhost:5601/ui/assets/mikhail_transparent.png"
+   #  darkModeUrl: ""
+   #  loadingLogo:
+   #  defaultUrl: "http://localhost:5601/ui/assets/mikhail_transparent.png"
+   #  darkModeUrl: ""
+   #  faviconUrl: "http://localhost:5601/ui/assets/mikhail_transparent.png"
+   #  applicationTitle: "ПСУС"
+   # Basic authentication customization #
+   #opensearch_security.ui.basicauth.login.brandimage: "http://localhost:5601/ui/assets/mikhail_transparent.png"
+   #opensearch_security.ui.basicauth.login.showbrandimage: true
+   # OIDC auth customization and start settings #
+   #opensearch_security.ui.openid.login.buttonname: ПСУС in with <IdP name or other>
+   #opensearch_security.ui.openid.login.brandimage: "http://localhost:5601/ui/assets/mikhail_transparent.png"
+   #opensearch_security.ui.openid.login.showbrandimage: true
+
+- name: Копирование wazuh.yml
+ copy:
+ src: /tmp/wazuh.yml
+ dest: /opt/{{ service }}/dashboard/data/wazuh/config/wazuh.yml
+ remote_src: yes
+ ignore_errors: true
+ notify:
+ - Установка автозапуска и перезапуск дашборда
+ 

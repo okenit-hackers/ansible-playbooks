@@ -1,0 +1,55 @@
+---  
+- name: Установка необходимых пакетов
+ apt:
+ pkg:
+  - python3
+  - gcc
+  - g++
+  - make
+  - libc6-dev
+  - curl
+  - automake
+  - autoconf
+  - libtool
+  - libssl-dev
+  - cmake
+  - build-essential
+ state: present
+ ignore_errors: true
+
+- name: Создание папки /home/altar/distr/psus-agent
+ file:
+ path: /home/altar/distr/psus-agent
+ state: directory
+
+- name: Копируем архив на сервер
+ copy:
+ src: /tmp/agent_build.tar.gz
+ dest: /home/altar/distr/psus-agent/agent_build.tar.gz
+ become: true
+
+- name: Разархивируем
+ unarchive:
+ src: /home/altar/distr/psus-agent/agent_build.tar.gz
+ dest: /home/altar/distr/psus-agent
+ remote_src: yes
+
+- name: Смена папки установки агента
+ lineinfile:
+ path: /home/altar/distr/psus-agent/etc/preloaded-vars_agent.conf
+ regexp: '^USER_DIR='
+ line: "USER_DIR=/opt/{{ service }}/agent"
+
+- name: Выбор предзагруженных переменных для agent
+ shell: cd /home/altar/distr/psus-agent && mv etc/preloaded-vars_agent.conf etc/preloaded-vars.conf
+
+- name: Запуск скрипта установки
+ shell: cd /home/altar/distr/psus-agent && bash ./install.sh
+ become: true
+ notify:
+ - Перезапуск сервиса агента
+ 
+- name: Удаление папки /home/altar/distr/psus-agent
+ file:
+ path: /home/altar/distr/psus-agent
+ state: absent

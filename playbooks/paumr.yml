@@ -1,0 +1,34 @@
+---
+- name: Установка paumr
+ hosts: '{{ hosts }}'
+ become: true
+ pre_tasks:
+ - name: Удаление старого билда
+  file:
+  path: /tmp/paumr.tar.gz
+  state: absent
+  delegate_to: ansible_host
+
+ - name: Загрузка paumr.tar.gz
+  get_url:
+   url: http://192.168.5.119:8000/paumr.tar.gz
+   dest: /tmp/paumr.tar.gz
+  delegate_to: ansible_host
+
+ - name: Скачаем сертификат
+  get_url:
+   url: http://192.168.5.119:8000/Proxmox/paumr.crt
+   dest: /tmp/paumr.crt
+  delegate_to: ansible_host
+
+ - name: Скачаем ключ
+  get_url:
+   url: http://192.168.5.119:8000/Proxmox/paumr.key
+   dest: /tmp/paumr.key
+  delegate_to: ansible_host
+
+ vars:
+ command: 'runserver'
+
+ roles:
+  - ../roles/paumr

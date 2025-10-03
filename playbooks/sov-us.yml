@@ -1,0 +1,20 @@
+---
+- name: Установка sov_us
+ hosts: '{{ hosts }}'
+ become: true
+ pre_tasks:
+ - name: Загрузка sov_us_main.tar.gz
+  get_url:
+   url: http://192.168.5.119:8000/sov_us_main.tar.gz
+   dest: /tmp/sov_us_main.tar.gz
+  delegate_to: ansible_host
+
+ - name: Загрузка sov_us_whl.tar.gz
+  get_url:
+   url: http://192.168.5.119:8000/sov_us_whl.tar.gz
+   dest: /tmp/sov_us_whl.tar.gz
+  delegate_to: ansible_host
+
+ roles:
+  - ../roles/sov_us
+

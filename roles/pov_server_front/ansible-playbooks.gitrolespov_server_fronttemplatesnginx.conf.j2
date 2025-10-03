@@ -1,0 +1,75 @@
+# API ПОВ-Сервера
+upstream pov_api {
+ server localhost:8081;
+}
+
+# API PCAP-ПХД
+upstream pcap_api {
+ server localhost:8086;
+}
+
+# Общая конфигурация
+server {
+ listen 80;
+ listen [::]:80;
+
+ root /var/www/html/pov-server/dist;
+ index index.html;
+
+ server_name {{ server_ip }};
+
+ location / {
+  try_files $uri $uri/ /index.html;
+ }
+
+ # Внутренний loсation для эндпоинта проверки сессии API ПОВ-Сервера
+ location /auth {
+  internal;
+
+  proxy_set_header Host $http_host;
+  proxy_buffering off;
+  proxy_pass http://pov_api/api/v1/user/health_check/;
+
+  # Включить, если поднадобится передача IP на эндпоинты:
+  #proxy_set_header X-Real-IP $remote_addr;
+  #proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+  #proxy_set_header X-Forwarded-Proto $scheme;
+ }
+
+ # Location для микросервиса PCAP ПХД
+ location /pcap/ {
+  auth_request /auth;
+
+  rewrite ^/pcap/(.*) /$1 break;
+
+  proxy_set_header Host $http_host;
+  proxy_buffering off;
+  proxy_pass http://pcap_api;
+
+  # Включить, если поднадобится передача IP на эндпоинты:
+  #proxy_set_header X-Real-IP $remote_addr;
+  #proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+  #proxy_set_header X-Forwarded-Proto $scheme;
+ }
+
+ # Открытый эндпоинт для загрузки PCAP-файлов (нужен для СОВ-УС)
+ location = /pcap/api/files {
+  # Используем ошибку 418 для перенаправления не-POST запросов на аутентификацию
+  error_page 418 = @auth_required;
+
+  if ($request_method != POST) {
+   return 418;
+  }
+
+  # POST запросы проходят без аутентификации
+  rewrite ^/pcap/(.*) /$1 break;
+  proxy_pass http://pcap_api;
+ }
+
+ # Location для обработки запросов, требующих аутентификации
+ location @auth_required {
+  auth_request /auth;
+  rewrite ^/pcap/(.*) /$1 break;
+  proxy_pass http://pcap_api;
+ }
+}

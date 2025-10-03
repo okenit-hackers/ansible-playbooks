@@ -1,0 +1,13 @@
+- name: Загрузка logstash
+ hosts: '{{ hosts }}'
+ become: true
+
+ pre_tasks:
+ - name: Загрузка logstash.tar.gz
+  get_url:
+  url: http://192.168.5.119:8000/logstash.tar.gz
+  dest: /tmp/logstash.tar.gz
+  delegate_to: ansible_host
+
+ roles:
+ - ../roles/logstash

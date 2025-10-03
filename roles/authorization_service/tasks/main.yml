@@ -1,0 +1,38 @@
+---
+# tasks file for authorization_service
+- name: Создание временной папки для установки
+ file:
+ path: /tmp/auth
+ state: directory
+
+- name: Копируем архив с программой
+ copy:
+ src: /tmp/auth_service.tar.gz
+ dest: /tmp/auth_service.tar.gz
+
+- name: Разархивируем архив
+ unarchive:
+ src: /tmp/auth_service.tar.gz
+ dest: /tmp/auth/
+
+- name: Запускаем скрипт установки программы
+ shell:
+ cmd: ./install.sh -m local_mode
+ chdir: /tmp/auth/
+ become: true
+
+- name: Запускаем скрипт установки программы
+ shell:
+ cmd: ./install.sh -m iif_mode
+ chdir: /tmp/auth/
+ become: true
+
+- name: Удалим временные файлы
+ file:
+ path: /tmp/auth
+ state: absent
+
+- name: Удалим временные файлы
+ file:
+ path: /tmp/auth_service.tar.gz
+ state: absent

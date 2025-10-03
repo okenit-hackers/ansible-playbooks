@@ -1,0 +1,8 @@
+---
+# handlers file for sc_agent
+- name: Перезапуск сервиса агента
+ service:
+ name: sc_agent
+ state: restarted
+ enabled: yes
+ become: true

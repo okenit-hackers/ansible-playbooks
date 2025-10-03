@@ -1,0 +1,84 @@
+---
+- name: Удаление settings.py из tmp
+ file:
+ path: /tmp/settings.py
+ state: absent
+
+- name: Сохраняем старые settings.py
+ copy:
+ src: /opt/{{ service }}/webmap/nmap_gui/nmap_gui/settings.py
+ dest: /tmp/settings.py
+ remote_src: yes
+ owner: altar
+ group: altar
+ ignore_errors: true
+
+- name: Удаление старой папки
+ file:
+ path: /opt/{{ service }}/webmap/
+ state: absent
+
+- name: Копируем архив с программой
+ copy:
+ src: /tmp/webmap_main.tar.gz
+ dest: /tmp/webmap_main.tar.gz
+ owner: altar
+ group: altar
+ become_user: altar
+
+- name: Создаем сервис для запуска
+ file:
+ path: /etc/systemd/system/webmap.service
+ state: touch
+
+- name: Заполнение файла сервиса
+ blockinfile:
+ path: /etc/systemd/system/webmap.service
+ block: |
+  [Unit]
+  Description=WebMap
+  After=multi-user.target
+  [Service]
+  User=altar
+  Group=altar
+  Restart=always
+  ExecStart=/opt/{{ service }}/webmap/venv/bin/python3 /opt/{{ service }}/webmap/nmap_gui/manage.py runserver 0.0.0.0:8084
+  WorkingDirectory=/opt/{{ service }}/webmap/nmap_gui/
+  [Install]
+  WantedBy=multi-user.target
+
+- name: Создание папки /opt/{{ service }}/webmap
+ file:
+ path: /opt/{{ service }}/webmap
+ state: directory
+ owner: altar
+ group: altar
+
+- name: Разархивируем программу в созданную папку /opt/{{ service }}/webmap
+ unarchive:
+ src: /tmp/webmap_main.tar.gz
+ dest: /opt/{{ service }}/webmap/
+ remote_src: yes
+ become_user: altar
+
+- name: Создание venv и установка в него зависимостей
+ shell:
+ cmd: python3 -m venv venv && source venv/bin/activate && pip3 install /opt/{{ service }}/webmap/dist/pip* --force-reinstall && pip3 install /opt/{{ service }}/webmap/dist/* --force-reinstall
+ chdir: /opt/{{ service }}/webmap/
+ become_user: altar
+
+- name: Вернем settings.py
+ shell:
+ cmd: mv /tmp/settings.py /opt/{{ service }}/webmap/nmap_gui/nmap_gui/settings.py
+ become_user: altar
+ ignore_errors: true
+
+- name: Пересоздадим базу
+ shell:
+ cmd: source venv/bin/activate && python3 nmap_gui/manage.py migrate
+ chdir: /opt/{{ service }}/webmap/
+ become_user: altar
+ notify:
+ - Перезапуск сервиса webmap
+
+...

@@ -1,0 +1,13 @@
+---
+- name: Установка hierarchy
+ hosts: '{{ hosts }}'
+ become: true
+ pre_tasks:
+ - name: Загрузка hierarchy.tar.gz
+  get_url:
+   url: http://192.168.5.119:8000/hierarchy.tar.gz
+   dest: /tmp/hierarchy.tar.gz
+  delegate_to: ansible_host
+
+ roles:
+  - ../roles/hierarchy

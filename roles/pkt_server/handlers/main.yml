@@ -1,0 +1,6 @@
+---
+# handlers file for pov_server
+- name: pkt_server restart
+ service:
+ name: pkt-server
+ state: restarted

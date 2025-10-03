@@ -1,0 +1,28 @@
+---
+- name: Установка paumr-front-proxmox
+ hosts: '{{ hosts }}'
+ become: true
+ pre_tasks:
+ - name: Удаление старого билда
+  file:
+  path: /tmp/paumr_front.tar.gz
+  state: absent
+  delegate_to: ansible_host
+
+ - name: Загрузка paumr_front_build_proxmox.tar.gz
+  get_url:
+  url: http://192.168.5.119:8000/paumr_front_build_proxmox.tar.gz
+  dest: /tmp/paumr_front.tar.gz
+  delegate_to: ansible_host
+
+ - name: Загрузка nginx.zip
+  get_url:
+  url: http://192.168.5.119:8000/nginx.zip
+  dest: /tmp/nginx.zip
+  delegate_to: ansible_host
+
+ vars:
+ nginx_template: nginx_ssl.conf.j2
+
+ roles:
+ - ../roles/paumr_front

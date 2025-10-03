@@ -1,0 +1,32 @@
+---
+# tasks file for hierarchy
+- name: Создание временной папки для установки
+ file:
+ path: /tmp/hierarchy
+ state: directory
+
+- name: Копируем архив с программой
+ copy:
+ src: /tmp/pov_server.tar.gz
+ dest: /tmp/hierarchy.tar.gz
+
+- name: Разархивируем архив
+ unarchive:
+ src: /tmp/hierarchy.tar.gz
+ dest: /tmp/hierarchy
+
+- name: Запускаем скрипт установки программы
+ shell:
+ cmd: ./install.sh psus
+ chdir: /tmp/hierarchy/
+
+- name: Удалим временные файлы
+ file:
+ path: /tmp/hierarchy
+ state: absent
+
+- name: Удалим временные файлы
+ file:
+ path: /tmp/hierarchy.tar.gz
+ state: absent
+ notify: hierarchy restart

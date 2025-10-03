@@ -1,0 +1,137 @@
+---
+# tasks file for filebeat
+- name: Копируем старый конфиг
+ copy:
+ src: /opt/{{ service }}/filebeat/{{ type }}/filebeat.yml
+ dest: /opt/psus/
+ remote_src: true
+ ignore_errors: true
+ 
+- name: Копируем старый wazuh-template.json  
+ copy:
+ src: /opt/{{ service }}/filebeat/{{ type }}/wazuh-template.json
+ dest: /opt/psus/
+ remote_src: true
+ ignore_errors: true
+ 
+- name: Создадим папку certs
+ file:
+ path: /opt/{{ service }}/certs
+ state: directory
+ 
+- name: Копируем сертификаты
+ copy:
+ src: /opt/{{ service }}/filebeat/{{ type }}/certs
+ dest: /opt/{{ service }}/certs
+ remote_src: true
+ ignore_errors: true
+  
+- name: Удаление старого filebeat
+ file:
+ path: /opt/{{ service }}/filebeat/{{ type }}/
+ state: absent
+ 
+- name: Создание новой папки filebeat
+ file:
+ path: /opt/{{ service }}/filebeat/{{ type }}/
+ state: directory
+
+- name: Копируем архив с программой
+ copy:
+ src: /tmp/filebeat_build.tar.gz
+ dest: /opt/{{ service }}/filebeat/{{ type }}/
+ 
+- name: Копируем архив с модулем
+ copy:
+ src: /tmp/wazuh-module.tar.gz
+ dest: /opt/{{ service }}/filebeat/{{ type }}/
+
+- name: Разархивируем программу в созданную папку
+ unarchive:
+ src: /opt/{{ service }}/filebeat/{{ type }}/filebeat_build.tar.gz
+ dest: /opt/{{ service }}/filebeat/{{ type }}/
+ remote_src: yes
+
+- name: Разархивируем модуль в созданную папку
+ unarchive:
+ src: /opt/{{ service }}/filebeat/{{ type }}/wazuh-module.tar.gz
+ dest: /opt/{{ service }}/filebeat/{{ type }}/module
+ remote_src: yes
+
+- name: Удаляем архивы из папки
+ file:
+ path: '{{ item }}'
+ state: absent
+ with_items:
+ - /opt/{{ service }}/filebeat/{{ type }}/filebeat_build.tar.gz
+ - /opt/{{ service }}/filebeat/{{ type }}/wazuh-module.tar.gz
+ 
+- name: Удалим прошлый сервис filebeat
+ file:
+ path: /etc/systemd/system/psus-filebeat.service
+ state: absent
+
+- name: Возвращаем старый конфиг
+ copy:
+ src: /opt/psus/filebeat.yml
+ dest: /opt/{{ service }}/filebeat/{{ type }}/filebeat.yml
+ remote_src: true
+ mode: go-w
+ ignore_errors: true 
+ 
+- name: Возвращаем wazuh-template.json
+ copy:
+ src: /opt/{{ service }}/filebeat/{{ type }}/wazuh-template.json
+ dest: /opt/{{ service }}/filebeat/{{ type }}/wazuh-template.json
+ remote_src: true
+ ignore_errors: true
+ 
+- name: Создадим папку certs
+ file:
+ path: /opt/{{ service }}/filebeat/{{ type }}/certs
+ state: directory
+ 
+- name: Возвращаем certs/
+ copy:
+ src: /opt/{{ service }}/certs
+ dest: /opt/{{ service }}/filebeat/{{ type }}/certs
+ remote_src: true
+ ignore_errors: true 
+ 
+- name: Удаляем все временные файлы
+ file:
+ path: '{{ item }}'
+ state: absent
+ with_items:
+ - /opt/{{ service }}/certs
+ - /opt/{{ service }}/wazuh-template.json
+ - /opt/{{ service }}/filebeat.yml
+
+- name: Создаем сервис для запуска filebeat
+ file:
+ path: /etc/systemd/system/filebeat-{{ type }}.service
+ state: touch
+
+- name: Смена разрешений у файла filebeat.yml
+ shell: chmod go-w /opt/{{ service }}/filebeat/{{ type }}/filebeat.yml
+
+- name: Заполняем его
+ blockinfile:
+ path: /etc/systemd/system/filebeat-{{ type }}.service
+ block: |
+  [Unit]
+  Description=Filebeat sends log files to Logstash or directly to Elasticsearch.
+  Wants=network-online.target
+  After=network-online.target
+  [Service] 
+  Environment="GODEBUG='madvdontneed=1'"
+  Environment="BEAT_LOG_OPTS="
+  Environment="BEAT_CONFIG_OPTS=-c /opt/{{ service }}/filebeat/{{ type }}/filebeat.yml"
+  Environment="BEAT_PATH_OPTS=--path.home /opt/{{ service }}/filebeat/{{ type }}/ --path.config /opt/{{ service }}/filebeat/{{ type }}/ --path.data /var/lib/filebeat --path.logs /var/log/filebeat"
+  ExecStart=/opt/{{ service }}/filebeat/{{ type }}/filebeat -environment systemd $BEAT_LOG_OPTS $BEAT_CONFIG_OPTS $BEAT_PATH_OPTS
+  Restart=always
+  [Install]
+  WantedBy=multi-user.target 
+ notify:
+ - Запуск filebeat
+ 

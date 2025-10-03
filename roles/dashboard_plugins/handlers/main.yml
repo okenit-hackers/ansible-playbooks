@@ -1,0 +1,7 @@
+---
+# handlers file for dashboard_plugins
+- name: Перезапуск dashboard
+ service:
+ name: dashboard.service
+ state: restarted
+ enabled: yes

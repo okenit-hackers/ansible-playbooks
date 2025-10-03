@@ -1,0 +1,60 @@
+---
+# tasks file for paumr_front
+- name: Копируем архив с установочными файлами nginx
+ copy:
+ src: /tmp/nginx.zip
+ dest: /tmp/nginx.zip
+
+- name: Разархивируем nginx
+ unarchive:
+ src: /tmp/nginx.zip
+ dest: /tmp/
+
+- name: Установка nginx
+ shell: sudo dpkg -i /tmp/nginx/*.deb
+ ignore_errors: true
+
+- name: Копируем архив со статикой paumr
+ copy:
+ src: /tmp/paumr_front.tar.gz
+ dest: /var/www/html/paumr_front.tar.gz
+
+- name: Удаление старого билда
+ file:
+ path: /var/www/html/paumr
+ state: absent
+
+- name: Создание папки под static-files paumr
+ file:
+ path: /var/www/html/paumr
+ state: directory
+
+- name: Разархивируем статику
+ unarchive:
+ src: /var/www/html/paumr_front.tar.gz
+ dest: /var/www/html/paumr/
+ remote_src: true
+
+- name: Удалим установочные файлы
+ file:
+ path:
+  - /var/www/html/paumr_front.tar.gz
+  - /tmp/nginx.zip
+ state: absent
+
+- name: Удалим конфигурационный файл nginx
+ file:
+ path: /etc/nginx/sites-available/default
+ state: absent
+
+- name: Копируем конфигурационный файл nginx
+ template:
+ src: "{{ nginx_template }}"
+ dest: /etc/nginx/sites-available/default
+ vars:
+ server_ip: "{{ ansible_host }}"
+ notify:
+ - Перезапуск NGINX
+
+
+

@@ -1,0 +1,68 @@
+---
+# tasks file for zabbix_agent
+- name: Копируем архив на сервер
+ copy:
+ src: /tmp/zabbix_agent.tar.gz
+ dest: /tmp/
+ become: true
+
+- name: Создание папки /etc/zabbix_agent
+ file:
+ path: /etc/zabbix_agent
+ state: directory
+
+- name: Перемещаем архив в созданную папку
+ command: mv /tmp/zabbix_agent.tar.gz /etc/zabbix_agent
+
+- name: Разархивируем
+ unarchive:
+ src: /etc/zabbix_agent/zabbix_agent.tar.gz
+ dest: /etc/zabbix_agent
+ remote_src: true
+
+- name: Меняем IP на нужный нам
+ replace:
+ path: /etc/zabbix_agent/conf/zabbix_agentd.conf
+ regexp: "Server=127.0.0.1"
+ replace: "Server={{ zabbix_server }}"
+
+- name: Меняем IP zabbix-server-active
+ replace:
+ path: /etc/zabbix_agent/conf/zabbix_agentd.conf
+ regexp: "ServerActive=127.0.0.1"
+ replace: "ServerActive={{ zabbix_server }}"
+
+- name: Создаем файл-сервис для агента
+ file:
+ path: /etc/systemd/system/zabbix_agent.service
+ state: touch
+
+- name: Заполняем файл-сервис
+ blockinfile:
+ path: /etc/systemd/system/zabbix_agent.service
+ block: |
+  [Unit]
+  Description=Zabbix Monitor Agent
+  After=syslog.target network.target
+
+  [Service]
+  Type=forking
+  ExecStart=/etc/zabbix_agent/sbin/zabbix_agentd
+  User=altar
+  PrivateTmp=yes
+
+  [Install]
+  WantedBy=multi-user.target
+
+- name: Перемещаем конфиг агента в папку /usr/local/etc/
+ command: mv /etc/zabbix_agent/conf/zabbix_agentd.conf /usr/local/etc/
+
+- name: Перезагрузка systemctl
+ command: systemctl daemon-reload
+ notify:
+ - Запуск сервиса и добавление его в автозагрузку
+
+ 
+
+
+ 

@@ -1,0 +1,45 @@
+---
+- name: Установка dashboard с плагинами
+ hosts: '{{ hosts }}'
+ become: true
+
+ pre_tasks:
+ - name: Загрузка dashboard.tar.gz
+  get_url:
+  url: http://192.168.5.119:8000/dashboard.tar.gz
+  dest: /tmp/dashboard.tar.gz
+  delegate_to: ansible_host
+
+ - name: Загрузка psus-app.tar.gz
+  get_url:
+  url: http://192.168.5.119:8000/psus_app.zip
+  dest: /tmp/psus_app.zip
+  delegate_to: ansible_host
+
+ - name: Загрузка psus_app_ad.zip
+  get_url:
+  url: http://192.168.5.119:8000/psus_app_ad.zip
+  dest: /tmp/psus-app-ad.zip
+  delegate_to: ansible_host
+
+ - name: Загрузка security-dashboards.tar.gz
+  get_url:
+  url: http://192.168.5.119:8000/security_plugin.zip
+  dest: /tmp/security_plugin.zip
+  delegate_to: ansible_host
+
+ - name: Загрузка файла локализации
+  get_url:
+  url: http://192.168.5.119:8000/localize_os-db_ru-RU.json
+  dest: /tmp/ru_RU.json
+  delegate_to: ansible_host
+
+ - name: Загрузка файла .i18nrc.json
+  get_url:
+  url: http://192.168.5.119:8000/.i18nrc.json
+  dest: /tmp/.i18nrc.json
+  delegate_to: ansible_host
+
+ roles:
+ - ../roles/dashboard
+ - ../roles/dashboard_plugins

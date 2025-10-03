@@ -1,0 +1,14 @@
+server {
+ listen 80;
+ listen [::]:80;
+ client_max_body_size 100M;
+ index index.html;
+
+ server_name {{ server_ip }};
+
+ location / {
+  root /var/www/html/doclog/dist;
+  try_files $uri $uri/ /index.html;
+ }
+
+}

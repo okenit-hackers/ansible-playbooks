@@ -1,0 +1,28 @@
+---
+- name: Установка ppka-front-local
+ hosts: '{{ hosts }}'
+ become: true
+ pre_tasks:
+ - name: Удаление старого билда
+  file:
+  path: /tmp/ppka_front_build.tar.gz
+  state: absent
+  delegate_to: ansible_host
+
+ - name: Загрузка ppka_front_build.tar.gz
+  get_url:
+  url: http://192.168.5.119:8000/ppka_front_build.tar.gz
+  dest: /tmp/ppka_front.tar.gz
+  delegate_to: ansible_host
+
+ - name: Загрузка nginx.zip
+  get_url:
+  url: http://192.168.5.119:8000/nginx.zip
+  dest: /tmp/nginx.zip
+  delegate_to: ansible_host
+
+ vars:
+ nginx_template: nginx.conf.j2
+
+ roles:
+ - ../roles/ppka_front_local

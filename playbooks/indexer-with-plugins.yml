@@ -1,0 +1,38 @@
+- name: Установка indexer с плагинами
+ hosts: '{{ hosts }}'
+ become: true
+
+ pre_tasks:
+ - name: Загрузка indexer_build.tar.gz
+  get_url:
+  url: http://192.168.5.119:8000/indexer.tar.gz
+  dest: /tmp/indexer_build.tar.gz
+  delegate_to: ansible_host
+
+ - name: Загрузка плагина anomaly
+  get_url:
+  url: http://192.168.5.119:8000/opensearch-anomaly-detection.zip
+  dest: /tmp/anomaly.zip
+  delegate_to: ansible_host
+
+ - name: Загрузка плагина job-scheduler
+  get_url:
+  url: http://192.168.5.119:8000/opensearch-job-scheduler.zip
+  dest: /tmp/job_scheduler.zip
+  delegate_to: ansible_host
+
+ - name: Загрузка плагина index-management
+  get_url:
+  url: http://192.168.5.119:8000/opensearch-index-management.zip
+  dest: /tmp/index-management.zip
+  delegate_to: ansible_host
+
+ - name: Загрузка плагина security
+  get_url:
+  url: http://192.168.5.119:8000/opensearch-security.zip
+  dest: /tmp/security.zip
+  delegate_to: ansible_host
+
+ roles:
+ - ../roles/indexer
+ - ../roles/indexer_plugins

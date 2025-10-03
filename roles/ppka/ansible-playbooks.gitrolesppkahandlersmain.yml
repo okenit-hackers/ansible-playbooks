@@ -1,0 +1,7 @@
+---
+# handlers file for ppka
+- name: Запуск PPKA
+ service:
+ name: ppka
+ state: restarted
+ enabled: yes

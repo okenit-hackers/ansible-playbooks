@@ -1,0 +1,94 @@
+---
+# tasks file for indexer
+
+- name: Сохранение старого конфига
+ copy:
+ src: /opt/{{ service }}/indexer/config/
+ dest: /tmp/config
+ owner: altar
+ group: altar
+ remote_src: true
+ ignore_errors: true
+
+- name: Удаление старой папки с indexer
+ file:
+ path: /opt/{{ service }}/indexer
+ state: absent
+
+- name: Создание новой папки psus-bd
+ file:
+ path: /opt/{{ service }}/indexer
+ state: directory
+
+- name: Копируем архив с программой
+ copy:
+ src: /tmp/indexer_build.tar.gz
+ dest: /opt/{{ service }}/indexer/indexer_build.tar.gz
+ become: true
+
+- name: Разархивируем программу в папку /opt/{{ service }}
+ unarchive:
+ src: /opt/{{ service }}/indexer/indexer_build.tar.gz
+ dest: /opt/{{ service }}/indexer
+ remote_src: yes
+
+- name: Смена владельца папки
+ file:
+ path: /opt/{{ service }}/indexer
+ owner: altar
+ group: altar
+ recurse: yes
+ state: directory
+ become: true
+
+- name: Удаляем архив
+ file:
+ path: /opt/{{ service }}/indexer/indexer_build.tar.gz
+ state: absent
+
+- name: Создаем сервис для запуска indexer
+ file:
+ path: /etc/systemd/system/indexer.service
+ state: touch
+
+- name: Заполняем его
+ blockinfile:
+ path: /etc/systemd/system/indexer.service
+ block: |  
+  [Unit]
+  Description=indexer
+  [Service]
+  User=altar
+  Group=altar
+  Type=simple
+  ExecStart=/opt/{{ service }}/indexer/bin/opensearch
+  WorkingDirectory=/opt/{{ service }}/indexer
+  [Install]
+  WantedBy=multi-user.target
+ notify:
+ - Установка автозапуска и запуск indexer
+
+- name: Смена настроек в файле config/opensearch.yml
+ blockinfile:
+ path: /opt/{{ service }}/indexer/config/opensearch.yml
+ block: |
+   discovery.type: single-node
+   network.host: 0.0.0.0
+   http.port: 9200
+   compatibility.override_main_response_version: true
+
+- name: Возвращаем старый конфиг
+ copy:
+ dest: /opt/{{ service }}/indexer/
+ src: /tmp/config
+ owner: altar
+ group: altar
+ remote_src: true
+ ignore_errors: true
+
+
+- name: Добавление переменной vm.max_map_count в файл
+ lineinfile:
+ path: /etc/sysctl.conf
+ line: vm.max_map_count=262144
+

@@ -1,0 +1,15 @@
+---
+- name: Установка pov_agent
+ hosts: '{{ hosts }}'
+ become: true
+ pre_tasks:
+ - name: Загрузка pov_agent.tar.gz
+  get_url:
+   url: http://192.168.5.119:8000/pov_agent.tar.gz
+   dest: /tmp/pov_agent.tar.gz
+  delegate_to: ansible_host
+
+
+ roles:
+  - ../roles/pov_agent
+

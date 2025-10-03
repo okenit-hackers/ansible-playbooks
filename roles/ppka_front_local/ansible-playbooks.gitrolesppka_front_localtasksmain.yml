@@ -1,0 +1,60 @@
+---
+# tasks file for ppka_front_local
+- name: Копируем архив с установочными файлами nginx
+ copy:
+ src: /tmp/nginx.zip
+ dest: /tmp/nginx.zip
+
+- name: Разархивируем nginx
+ unarchive:
+ src: /tmp/nginx.zip
+ dest: /tmp/
+
+- name: Установка nginx
+ shell: sudo dpkg -i /tmp/nginx/*.deb
+ ignore_errors: true
+
+- name: Копируем архив со статикой ppka
+ copy:
+ src: /tmp/ppka_front.tar.gz
+ dest: /var/www/html/ppka_front.tar.gz
+
+- name: Удаление старого билда
+ file:
+ path: /var/www/html/ppka
+ state: absent
+
+- name: Создание папки под static-files ppka
+ file:
+ path: /var/www/html/ppka
+ state: directory
+
+- name: Разархивируем статику
+ unarchive:
+ src: /var/www/html/ppka_front.tar.gz
+ dest: /var/www/html/ppka
+ remote_src: true
+
+- name: Удалим установочные файлы
+ file:
+ path:
+  - /var/www/html/ppka_front.tar.gz
+  - /tmp/nginx.zip
+ state: absent
+
+- name: Удалим конфигурационный файл nginx
+ file:
+ path: /etc/nginx/sites-available/default
+ state: absent
+
+- name: Копируем конфигурационный файл nginx
+ template:
+ src: nginx.conf.j2
+ dest: /etc/nginx/sites-available/default
+ vars:
+ server_ip: "{{ ansible_host }}"
+ notify:
+ - Перезапуск NGINX
+
+
+

@@ -1,0 +1,7 @@
+---
+# handlers file for logstash
+- name: Запуск logstash
+ service:
+ name: "{{ service }}-logstash.service"
+ state: restarted
+ enabled: yes

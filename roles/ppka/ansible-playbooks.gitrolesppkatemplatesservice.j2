@@ -1,0 +1,11 @@
+[Unit]
+Description=PPKA
+After=multi-user.target
+[Service]
+Type=simple
+User=altar
+Group=altar
+ExecStart=/opt/ppka/venv/bin/python3 ppka/manage.py runserver 0.0.0.0:8000
+WorkingDirectory=/opt/ppka
+[Install]
+WantedBy=multi-user.target

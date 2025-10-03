@@ -1,0 +1,54 @@
+---
+- block: # Начало блока, который выполнится, если install_nginx == true
+ - name: Копируем архив с установочными файлами nginx
+  copy:
+  src: /tmp/nginx.zip
+  dest: /tmp/nginx.zip
+
+ - name: Разархивируем nginx
+  unarchive:
+  src: /tmp/nginx.zip
+  dest: /tmp/
+
+ - name: Установка nginx
+  shell: dpkg -i /tmp/nginx/*.deb
+  ignore_errors: true
+  become: yes
+
+ - name: Копируем конфигурационный файл nginx
+  template:
+  src: nginx.conf.j2
+  dest: /etc/nginx/sites-enabled/default
+  vars:
+  server_ip: "{{ ansible_host }}"
+  notify:
+  - Перезапуск NGINX
+ when: install_nginx == true # Условие для выполнения блока
+
+- name: Копируем архив со статикой pov-server
+ copy:
+ src: /tmp/psdoi_front.tar.gz
+ dest: /var/www/html/psdoi_front.tar.gz
+
+- name: Удаление старого билда
+ file:
+ path: /var/www/html/psdoi_front
+ state: absent
+
+- name: Создание папки под static-files paumr
+ file:
+ path: /var/www/html/psdoi_front
+ state: directory
+
+- name: Разархивируем статику
+ unarchive:
+ src: /var/www/html/psdoi_front.tar.gz
+ dest: /var/www/html/navbar/
+ remote_src: true
+
+- name: Удалим установочные файлы
+ file:
+ path:
+  - /var/www/html/psdoi_front.tar.gz
+  - /tmp/nginx.zip
+ state: absent

@@ -1,0 +1,31 @@
+<VirtualHost *:81>
+ ServerName {{ server_ip }}
+ DocumentRoot /var/www/html/pkt-server
+
+ <Directory /var/www/html/pkt-server>
+  Options Indexes FollowSymLinks
+  AllowOverride None
+  Require all granted
+ </Directory>
+
+ DirectoryIndex index.html
+
+ # Внутренний location для эндпоинта проверки сессии API ПОВ-Сервера
+ <Location /auth>
+  Require all denied
+
+  ProxyPass "http://localhost:8081/api/v1/user/health_check/"
+  ProxyPassReverse "http://localhost:8081/api/v1/user/health_check/"
+
+  # Включить, если понадобится передача IP на эндпоинты:
+  # RequestHeader set X-Real-IP %{REMOTE_ADDR}s
+  # RequestHeader set X-Forwarded-For %{REMOTE_ADDR}s
+  # RequestHeader set X-Forwarded-Proto %{REQUEST_SCHEME}s
+ </Location>
+
+ # Проксирование всех запросов для try_files
+ RewriteEngine On
+ RewriteCond %{REQUEST_FILENAME} !-f
+ RewriteCond %{REQUEST_FILENAME} !-d
+ RewriteRule ^ /index.html [L]
+</VirtualHost>

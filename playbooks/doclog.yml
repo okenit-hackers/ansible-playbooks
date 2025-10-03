@@ -1,0 +1,15 @@
+---
+- name: Установка doclog
+ hosts: '{{ hosts }}'
+ become: true
+ pre_tasks:
+ - name: Загрузка doclog.tar.gz
+  get_url:
+   url: http://192.168.5.119:8000/doclog_back.tar.gz
+   dest: /tmp/doclog.tar.gz
+  delegate_to: ansible_host
+
+
+ roles:
+  - ../roles/doclog
+

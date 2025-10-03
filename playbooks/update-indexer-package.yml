@@ -1,0 +1,54 @@
+---
+- name: Разархивировать папку dashboard.tar.gz
+ hosts: ansible_host
+ tasks:
+ - name: Загрузка indexer.tar.gz
+  get_url:
+  url: http://192.168.5.119:8000/psus_bd_build.tar.gz
+  dest: /tmp/indexer.tar.gz
+
+ - name: Удалить папку
+  file:
+  path: /tmp/indexer
+  state: absent
+
+ - name: Создать папку под билд индексера
+  file:
+  path: /tmp/indexer
+  state: directory
+
+ - name: Разархивировать билд
+  ansible.builtin.unarchive:
+  src: /tmp/indexer.tar.gz
+  dest: /tmp/indexer
+
+ - name: Загрузка плагинов
+  get_url:
+  url: "http://192.168.5.119:8000/{{ item.src }}"
+  dest: "/tmp/{{ item.src }}"
+  with_items:
+  - { src: "opensearch-security.zip" }
+  - { src: "opensearch-job-scheduler.zip" }
+  - { src: "opensearch-anomaly-detection.zip" }
+
+ - name: Копировать плагины в папку plugins
+  ansible.builtin.copy:
+  src: "/tmp/{{ item.src }}"
+  dest: "/tmp/indexer/plugins/"
+  with_items:
+  - { src: "opensearch-security.zip" }
+  - { src: "opensearch-job-scheduler.zip" }
+  - { src: "opensearch-anomaly-detection.zip" }
+
+ - name: Архивировать папку indexer с плагинами
+  archive:
+  path: /tmp/indexer
+  dest: /tmp/indexer_package.tar.gz
+
+- name: Скопировать архив на репозиторий
+ hosts: repo119
+ tasks:
+ - name: Копировать архив
+  ansible.builtin.copy:
+  src: "/tmp/indexer_package.tar.gz"
+  dest: "/mnt/tmp/repo/indexer_package.tar.gz"

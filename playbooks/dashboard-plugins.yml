@@ -1,0 +1,20 @@
+---
+- name: Установка psus-dashboard с плагинами
+ hosts: '{{ hosts }}'
+ become: true
+
+ pre_tasks:
+ - name: Загрузка psus-app.tar.gz
+  get_url:
+  url: http://192.168.5.119:8000/psus_app.zip
+  dest: /tmp/psus_app.zip
+  delegate_to: ansible_host
+
+ - name: Загрузка psus-app-ad.tar.gz
+  get_url:
+  url: http://192.168.5.119:8000/psus-app-ad.zip
+  dest: /tmp/psus-app-ad.zip
+  delegate_to: ansible_host
+
+ roles:
+ - ../roles/dashboard_plugins

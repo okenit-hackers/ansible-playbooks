@@ -1,0 +1,7 @@
+---
+- name: Перезапуск сервиса агента
+ service:
+ name: psus-agent.service
+ state: restarted
+ enabled: yes
+ become: true

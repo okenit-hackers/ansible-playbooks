@@ -1,0 +1,7 @@
+---
+# handlers file for zabbix_agent
+- name: Запуск сервиса и добавление его в автозагрузку
+ service:
+ name: zabbix_agent
+ state: restarted
+ enabled: yes

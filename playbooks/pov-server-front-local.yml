@@ -1,0 +1,19 @@
+---
+- name: Установка paumr-front-proxmox
+ hosts: '{{ hosts }}'
+ become: true
+ pre_tasks:
+ - name: Загрузка paumr_front_build_proxmox.tar.gz
+  get_url:
+   url: http://192.168.5.119:8000/pov_server_front_build.tar.gz
+   dest: /tmp/pov_server_front_build.tar.gz
+  delegate_to: ansible_host
+
+ - name: Загрузка nginx.zip
+  get_url:
+   url: http://192.168.5.119:8000/nginx.zip
+   dest: /tmp/nginx.zip
+  delegate_to: ansible_host
+
+ roles:
+  - ../roles/pov_server_front

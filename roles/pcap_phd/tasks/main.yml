@@ -1,0 +1,33 @@
+---
+# tasks file for pcap_phd
+- name: Создание временной папки для установки
+ file:
+ path: /tmp/pcap_phd
+ state: directory
+
+- name: Копируем архив с программой
+ copy:
+ src: /tmp/pcap_phd.tar.gz
+ dest: /tmp/pcap_phd.tar.gz
+
+- name: Разархивируем архив
+ unarchive:
+ src: /tmp/pcap_phd.tar.gz
+ dest: /tmp/pcap_phd/
+
+- name: Запускаем скрипт установки программы
+ shell:
+ cmd: ./install.sh
+ chdir: /tmp/pcap_phd/
+ become: true
+
+- name: Удалим временные файлы
+ file:
+ path: /tmp/pcap_phd
+ state: absent
+
+- name: Удалим временные файлы
+ file:
+ path: /tmp/pcap_phd.tar.gz
+ state: absent
+

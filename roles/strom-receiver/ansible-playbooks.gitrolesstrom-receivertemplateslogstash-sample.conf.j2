@@ -1,0 +1,211 @@
+input {
+
+ file {
+ mode => "read"
+ path => "/opt/stromReciever/parsed_data/changedRights/cve/*.json"
+ start_position => "beginning"
+ sincedb_path => "/dev/null"
+ codec => "json"
+ type => "cve"
+ }
+
+ file {
+ mode => "read"
+ path => "/opt/stromReciever/parsed_data/changedRights/cwe/*.json"
+ start_position => "beginning"
+ sincedb_path => "/dev/null"
+ codec => "json"
+ type => "cwe"
+ }
+
+ file {
+ mode => "read"
+ path => "/opt/stromReciever/parsed_data/changedRights/rhsa/*.json"
+ start_position => "beginning"
+ sincedb_path => "/dev/null"
+ codec => "json"
+ type => "rhsa"
+ }
+
+ file {
+ mode => "read"
+ path => "/opt/stromReciever/parsed_data/changedRights/loc/*.json"
+ start_position => "beginning"
+ sincedb_path => "/dev/null"
+ codec => "json"
+ type => "loc"
+ }
+
+ file {
+ mode => "read"
+ path => "/opt/stromReciever/parsed_data/changedRights/capec/*.json"
+ start_position => "beginning"
+ sincedb_path => "/dev/null"
+ codec => "json"
+ type => "capec"
+ }
+
+ file {
+ mode => "read"
+ path => "/opt/stromReciever/parsed_data/changedRights/ics/*.json"
+ start_position => "beginning"
+ sincedb_path => "/dev/null"
+ codec => "json"
+ type => "ics"
+ }
+
+ file {
+ mode => "read"
+ path => "/opt/stromReciever/parsed_data/changedRights/bdu/*.json"
+ start_position => "beginning"
+ sincedb_path => "/dev/null"
+ codec => "json"
+ type => "bdu"
+ }
+
+ file {
+ mode => "read"
+ path => "/opt/stromReciever/parsed_data/changedRights/edb/*.json"
+ start_position => "beginning"
+ sincedb_path => "/dev/null"
+ codec => "json"
+ type => "edb"
+ }
+}
+
+filter {
+ if [type] == "cve" {
+ mutate { replace => { "type" => "cve" } }
+ }
+ else if [type] == "cwe" {
+ mutate { replace => { "type" => "cwe" } }
+ }
+ else if [type] == "loc" {
+ mutate { replace => { "type" => "loc" } }
+ }
+ else if [type] == "capec" {
+ mutate { replace => { "type" => "capec" } }
+ }
+ else if [type] == "ics" {
+ mutate { replace => { "type" => "ics" } }
+ }
+ else if [type] == "bdu" {
+ mutate { replace => { "type" => "bdu" } }
+ }
+ else if [type] == "edb" {
+ mutate { replace => { "type" => "edb" } }
+ }
+ else if [type] == "rhsa" {
+ mutate { replace => { "type" => "rhsa" } }
+ }
+}
+
+
+output {
+
+  if [type] == "bdu" {
+  opensearch {
+  hosts => ["http://{{ opensearch_ip }}:9200"]
+  index => "psdoi-bdu-%{+YYYY.MM.dd}"
+  document_id => "%{ID}"
+  action => "update"
+  user => "admin"
+  password => "admin"
+  ssl => false
+  ssl_certificate_verification => false
+  doc_as_upsert => true
+ }
+
+}
+
+  else if [type] == "cve" {
+  opensearch {
+  hosts => ["http://{{ opensearch_ip }}:9200"]
+  index => "psdoi-cve-%{+YYYY.MM.dd}"
+  document_id => "%{ID}"
+  action => "update"
+  user => "admin"
+  password => "admin"
+  ssl => false
+  ssl_certificate_verification => false
+  doc_as_upsert => true
+ }
+
+}
+  else if [type] == "rhsa" {
+  opensearch {
+  hosts => ["http://{{ opensearch_ip }}:9200"]
+  index => "psdoi-rhsa-%{+YYYY.MM.dd}"
+  document_id => "%{ID}"
+  action => "update"
+  user => "admin"
+  password => "admin"
+  ssl => false
+  ssl_certificate_verification => false
+  doc_as_upsert => true
+ }
+
+}
+
+  else if [type] == "cwe" {
+  opensearch {
+  hosts => ["http://{{ opensearch_ip }}:9200"]
+  index => "psdoi-cwe-%{+YYYY.MM.dd}"
+  document_id => "%{ID}"
+  action => "update"
+  user => "admin"
+  password => "admin"
+  ssl => false
+  ssl_certificate_verification => false
+  doc_as_upsert => true
+ }
+
+}
+
+  else if [type] == "loc" {
+  opensearch {
+  hosts => ["http://{{ opensearch_ip }}:9200"]
+  index => "psdoi-loc-%{+YYYY.MM.dd}"
+  document_id => "%{ID}"
+  action => "update"
+  user => "admin"
+  password => "admin"
+  ssl => false
+  ssl_certificate_verification => false
+  doc_as_upsert => true
+ }
+
+}
+
+  else if [type] == "edb" {
+  opensearch {
+  hosts => ["http://{{ opensearch_ip }}:9200"]
+  index => "psdoi-edb-%{+YYYY.MM.dd}"
+  document_id => "%{ID}"
+  action => "update"
+  user => "admin"
+  password => "admin"
+  ssl => false
+  ssl_certificate_verification => false
+  doc_as_upsert => true
+ }
+
+}
+
+  else if [type] == "ics" {
+  opensearch {
+  hosts => ["http://{{ opensearch_ip }}:9200"]
+  index => "psdoi-ics-%{+YYYY.MM.dd}"
+  document_id => "%{ID}"
+  action => "update"
+  user => "admin"
+  password => "admin"
+  ssl => false
+  ssl_certificate_verification => false
+  doc_as_upsert => true
+ }
+
+}
+
+ stdout { codec => rubydebug }
+}

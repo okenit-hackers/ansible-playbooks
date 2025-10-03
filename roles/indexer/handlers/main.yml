@@ -1,0 +1,7 @@
+---
+# handlers file for indexer
+- name: Установка автозапуска и запуск indexer
+ service:
+ name: indexer.service
+ state: restarted
+ enabled: yes

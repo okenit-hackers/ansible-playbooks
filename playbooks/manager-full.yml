@@ -1,0 +1,141 @@
+---
+- name: Установка manager
+ hosts: '{{ hosts }}'
+ become: true
+
+ pre_tasks:
+ - name: Загрузка manager.tar.gz
+  get_url:
+  url: http://192.168.5.119:8000/manager_build.tar.gz
+  dest: /tmp/manager_build.tar.gz
+  delegate_to: ansible_host
+
+ roles:
+ - ../roles/manager
+
+
+- name: Установка indexer с плагинами
+ hosts: '{{ hosts }}'
+ become: true
+
+ pre_tasks:
+ - name: Загрузка indexer_build.tar.gz
+  get_url:
+  url: http://192.168.5.119:8000/psus_bd_build.tar.gz
+  dest: /tmp/indexer_build.tar.gz
+  delegate_to: ansible_host
+
+ # - name: Загрузка плагина anomaly
+ #  get_url:
+ #  url: http://192.168.5.119:8000/opensearch-anomaly-detection.zip
+ #  dest: /tmp/anomaly.zip
+ #  delegate_to: ansible_host
+
+ # - name: Загрузка плагина job-scheduler
+ #  get_url:
+ #  url: http://192.168.5.119:8000/opensearch-job-scheduler.zip
+ #  dest: /tmp/job_scheduler.zip
+ #  delegate_to: ansible_host
+
+ # - name: Загрузка плагина security
+ #  get_url:
+ #  url: http://192.168.5.119:8000/opensearch-security.zip
+ #  dest: /tmp/security.zip
+ #  delegate_to: ansible_host
+
+ roles:
+ - ../roles/indexer
+ # - ../roles/indexer_plugins
+
+- name: Загрузка новых артефактов на ansible_host
+ hosts: '{{ hosts }}'
+ become: true
+
+ pre_tasks:
+ - name: Загрузка filebeat
+  get_url:
+  url: http://192.168.5.119:8000/filebeat_build.tar.gz
+  dest: /tmp/
+  delegate_to: ansible_host
+
+ - name: Загрузка wazuh-module
+  get_url:
+  url: http://192.168.5.119:8000/filebeat/wazuh-module.tar.gz
+  dest: /tmp/
+  delegate_to: ansible_host
+
+ roles:
+ - ../roles/filebeat
+
+
+- name: Установка dashboard с плагинами
+ hosts: '{{ hosts }}'
+ become: true
+
+ pre_tasks:
+ - name: Загрузка dashboard.tar.gz
+  get_url:
+  url: http://192.168.5.119:8000/psus-db.tar.gz
+  dest: /tmp/dashboard.tar.gz
+  delegate_to: ansible_host
+
+ - name: Загрузка psus-app.tar.gz
+  get_url:
+  url: http://192.168.5.119:8000/psus_app.zip
+  dest: /tmp/psus_app.zip
+  delegate_to: ansible_host
+
+ - name: Загрузка psus-app-ad.tar.gz
+  get_url:
+  url: http://192.168.5.119:8000/psus-app-ad.zip
+  dest: /tmp/psus-app-ad.zip
+  delegate_to: ansible_host
+
+ - name: Загрузка security-dashboards.tar.gz
+  get_url:
+  url: http://192.168.5.119:8000/security_plugin.zip
+  dest: /tmp/security_plugin.zip
+  delegate_to: ansible_host
+
+ - name: Загрузка файла локализации
+  get_url:
+  url: http://192.168.5.119:8000/localize_os-db_ru-RU.json
+  dest: /tmp/ru_RU.json
+  delegate_to: ansible_host
+
+ - name: Загрузка файла .i18nrc.json
+  get_url:
+  url: http://192.168.5.119:8000/.i18nrc.json
+  dest: /tmp/.i18nrc.json
+  delegate_to: ansible_host
+
+ roles:
+ - ../roles/dashboard
+ - ../roles/dashboard_plugins
+
+- name: Загрузка logstash
+ hosts: '{{ hosts }}'
+ become: true
+
+ pre_tasks:
+ - name: Загрузка logstash.tar.gz
+  get_url:
+  url: http://192.168.5.119:8000/logstash.tar.gz
+  dest: /tmp/logstash.tar.gz
+  delegate_to: ansible_host
+
+ roles:
+ - ../roles/logstash
+
+- name: Установка webmap
+ hosts: '{{ hosts }}'
+ become: true
+ pre_tasks:
+ - name: Загрузка webmap_main.tar.gz
+  get_url:
+  url: http://192.168.5.119:8000/webmap_main.tar.gz
+  dest: /tmp/webmap_main.tar.gz
+  delegate_to: ansible_host
+
+ roles:
+ - ../roles/webmap

@@ -1,0 +1,7 @@
+---
+# handlers file for hierarchy
+- name: hierarchy restart
+ service:
+ name: hierarchy
+ state: restarted
+ enabled: yes

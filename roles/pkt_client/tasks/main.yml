@@ -1,0 +1,45 @@
+---
+# tasks file for pov_agent
+- name: Сохраним старый конфиг pov_agent
+ copy:
+ src: /opt/pkt/pkt_client/pov_agent/config.yml
+ dest: /tmp/config.yml
+ remote_src: true
+ ignore_errors: true
+
+- name: Создание временной папки для установки
+ file:
+ path: /tmp/pkt_client
+ state: directory
+
+- name: Копируем архив с программой
+ copy:
+ src: /tmp/pkt_client.tar.gz
+ dest: /tmp/pkt_client.tar.gz
+
+- name: Разархивируем архив
+ unarchive:
+ src: /tmp/pkt_client.tar.gz
+ dest: /tmp/pkt_client/
+
+- name: Запускаем скрипт установки программы
+ shell:
+ cmd: ./install.sh pkt
+ chdir: /tmp/pkt_client/
+
+- name: Удалим временные файлы
+ file:
+ path: /tmp/pkt_client
+ state: absent
+
+- name: Удалим временные файлы
+ file:
+ path: /tmp/pkt_client.tar.gz
+ state: absent
+
+- name: Вернем старый конфиг pkt_client
+ copy:
+ dest: /opt/pkt/pkt_client/pov_agent/config.yml
+ src: /tmp/config.yml
+ remote_src: true
+ ignore_errors: true

@@ -1,0 +1,6 @@
+---
+# handlers file for pov_server
+- name: pov_server restart
+ service:
+ name: pov-server
+ state: restarted

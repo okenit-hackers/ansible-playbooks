@@ -1,0 +1,15 @@
+---
+- name: Установка pkt_client
+ hosts: '{{ hosts }}'
+ become: true
+ pre_tasks:
+ - name: Загрузка pkt-client.tar.gz
+  get_url:
+   url: http://192.168.5.119:8000/pkt_client.tar.gz
+   dest: /tmp/pkt_client.tar.gz
+  delegate_to: ansible_host
+
+
+ roles:
+  - ../roles/pkt_client
+

@@ -1,0 +1,12 @@
+[Unit]
+Description=PAUMR-Celery
+After=multi-user.target
+[Service]
+Type=simple
+Environment="PYTHONPATH=/opt/paumr"
+User=altar
+Group=altar
+ExecStart=/opt/paumr/venv/bin/celery -A paumr.fir_celery worker --loglevel=info
+WorkingDirectory=/opt/paumr/paumr
+[Install]
+WantedBy=multi-user.target

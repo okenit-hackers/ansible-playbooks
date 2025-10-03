@@ -1,0 +1,6 @@
+---
+# handlers file for indexer_plugins
+- name: Перезапуск сервиса indexer
+ service:
+ name: indexer.service
+ state: restarted

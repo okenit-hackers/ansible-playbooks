@@ -1,0 +1,54 @@
+---
+- name: Разархивировать папку dashboard.tar.gz
+ hosts: ansible_host
+ tasks:
+ - name: Загрузка dashboard.tar.gz
+  get_url:
+  url: http://192.168.5.119:8000/dashboard.tar.gz
+  dest: /tmp/dashboard.tar.gz
+
+ - name: Удалить папку
+  file:
+  path: /tmp/dashboard
+  state: absent
+
+ - name: Создать папку под билд дашборда
+  file:
+  path: /tmp/dashboard
+  state: directory
+
+ - name: Разархивировать билд
+  ansible.builtin.unarchive:
+  src: /tmp/dashboard.tar.gz
+  dest: /tmp/dashboard
+
+ - name: Загрузка плагинов
+  get_url:
+  url: "http://192.168.5.119:8000/{{ item.src }}"
+  dest: "/tmp/{{ item.src }}"
+  with_items:
+  - { src: "psus_app.zip" }
+  - { src: "psus_app_ad.zip" }
+  - { src: "security_plugin.zip" }
+
+ - name: Копировать плагины в папку plugins
+  ansible.builtin.copy:
+  src: "/tmp/{{ item.src }}"
+  dest: "/tmp/dashboard/plugins/"
+  with_items:
+  - { src: "psus_app.zip" }
+  - { src: "psus_app_ad.zip" }
+  - { src: "security_plugin.zip" }
+
+ - name: Архивировать папку dashboard с плагинами
+  archive:
+  path: /tmp/dashboard
+  dest: /tmp/dashboard_package.tar.gz
+
+- name: Скопировать архив на репозиторий
+ hosts: repo119
+ tasks:
+ - name: Копировать архив
+  ansible.builtin.copy:
+  src: "/tmp/dashboard_package.tar.gz"
+  dest: "/mnt/tmp/repo/dashboard_package.tar.gz"

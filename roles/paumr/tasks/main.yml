@@ -1,0 +1,197 @@
+---
+# tasks file for paumr
+- name: Удаление папки
+ file:
+ path: /tmp/paumr
+ state: absent
+
+- name: Остановка ПАУМР
+ service:
+ name: paumr
+ state: stopped
+ ignore_errors: yes
+
+- name: остановка ПАУМР
+ service:
+ name: paumr-celery
+ state: stopped
+ ignore_errors: yes
+
+- name: Пересоздание базы
+ shell:
+ cmd: PGPASSWORD=postgres psql -U postgres -h {{ postgres_ip }} -c "DROP DATABASE paumr;" -c "CREATE DATABASE paumr;" -c "GRANT ALL ON DATABASE paumr TO paumr;"
+
+- name: Создание временной папки для установки
+ file:
+ path: /tmp/paumr
+ state: directory
+
+- name: Создание временной папки для установки
+ file:
+ path: /tmp/paumr/paumr_whl
+ state: directory
+
+- name: Копируем архив с программой
+ copy:
+ src: /tmp/paumr.tar.gz
+ dest: /tmp/paumr.tar.gz
+ owner: altar
+ group: altar
+ become_user: altar
+
+- name: Разархивируем программу в созданную папку /tmp/paumr
+ unarchive:
+ src: /tmp/paumr.tar.gz
+ dest: /tmp/paumr
+ remote_src: yes
+
+- name: Разархивируем программу в созданную папку /tmp/paumr
+ unarchive:
+ src: /tmp/paumr/paumr_whl.tar.gz
+ dest: /tmp/paumr/paumr_whl
+ remote_src: yes
+
+- name: Проверка наличия файла настроек
+ stat:
+ path: /opt/paumr/paumr/fir/settings.py
+ register: settings_file_stat
+
+- name: Копирование файла настроек, если он существует
+ copy:
+ src: /opt/paumr/paumr/fir/settings.py
+ dest: /tmp/paumr/paumr/fir/settings.py
+ remote_src: yes
+ when: settings_file_stat.stat.exists
+
+- name: Удалим старую папку paumr
+ file:
+ path: /opt/paumr
+ state: absent
+ become: true
+
+- name: Создадим папку paumr
+ file:
+ path: /opt/paumr
+ state: directory
+ owner: altar
+ group: altar
+ become: true
+
+- name: Копирование папки
+ copy:
+ dest: /opt/paumr/
+ src: /tmp/paumr/
+ remote_src: yes
+ become_user: altar
+
+- name: Создадим venv
+ shell:
+ cmd: python3 -m venv venv
+ chdir: /opt/paumr
+ become_user: altar
+
+- name: Переходим в директорию с распакованными whl файлами и запускаем установку pip
+ shell:
+ cmd: source venv/bin/activate && pip3 install paumr_whl/pip*
+ chdir: /opt/paumr/
+ become_user: altar
+
+- name: Запускаем установку остальных whl файлов
+ shell:
+ cmd: source venv/bin/activate && pip3 install paumr_whl/*
+ chdir: /opt/paumr/
+ become_user: altar
+
+- name: Смена настроек в файле fir/settings.py для подключения
+ blockinfile:
+ path: /opt/paumr/paumr/fir/settings.py
+ block: |
+  ALLOWED_HOSTS=["*"]
+  DATABASES = {
+   'default': {
+    'ENGINE': 'django.db.backends.postgresql',
+    'NAME': 'paumr',
+    'USER': 'paumr',
+    'PASSWORD': 'paumr',
+    'HOST': '{{ postgres_ip }}',
+    'PORT': '5432',
+   },
+  }
+  OPENSEARCH_PROTOCOL = 'https'
+  OPENSEARCH_PSUS_HOST = '{{ opensearch_ip_psus }}'
+  OPENSEARCH_PSDOI_HOST = '{{ opensearch_ip_psdoi }}'
+  OPENSEARCH_PSDOI_CLIENT = OpenSearch(
+   [f'{OPENSEARCH_PROTOCOL}://{OPENSEARCH_PSDOI_HOST}:{OPENSEARCH_PORT}'],
+   http_auth=(OPENSEARCH_USERNAME, OPENSEARCH_PASSWORD),
+   verify_certs=False,
+   ssl_show_warn=False,
+  )
+  OPENSEARCH_PSUS_CLIENT = OpenSearch(
+   [f'{OPENSEARCH_PROTOCOL}://{OPENSEARCH_PSUS_HOST}:{OPENSEARCH_PORT}'],
+   http_auth=(OPENSEARCH_USERNAME, OPENSEARCH_PASSWORD),
+   verify_certs=False,
+   ssl_show_warn=False,
+  )
+ when: not settings_file_stat.stat.exists
+ become_user: altar
+
+- name: Удалим сервис для запуска paumr
+ file:
+ path: /etc/systemd/system/paumr.service
+ state: absent
+
+- name: Создаем новый сервис файл
+ template:
+ src: service.j2
+ dest: /etc/systemd/system/paumr.service
+
+- name: Создаем новый сервис файл-celery
+ template:
+ src: service-celery.j2
+ dest: /etc/systemd/system/paumr-celery.service
+
+- name: systemctl daemon-reload
+ shell: systemctl daemon-reload
+ become: yes
+
+- name: Копируем архив с программой
+ copy:
+ src: /tmp/paumr.key
+ dest: /opt/paumr/paumr/fir/
+ owner: altar
+ group: altar
+ become_user: altar
+
+- name: Копируем архив с программой
+ copy:
+ src: /tmp/paumr.crt
+ dest: /opt/paumr/paumr/fir/
+ owner: altar
+ group: altar
+ become_user: altar
+
+- name: Миграции
+ shell:
+ cmd: export PYTHONPATH=/opt/paumr && source venv/bin/activate && python3 paumr/manage.py migrate
+ chdir: /opt/paumr
+ become_user: altar
+
+- name: Загрузка данных
+ shell:
+ cmd: source venv/bin/activate && export PYTHONPATH=/opt/paumr && python3 paumr/manage.py loaddata paumr/incidents/fixtures/main_fixture.json
+ chdir: /opt/paumr
+ become_user: altar
+
+- name: Статика
+ shell:
+ cmd: source venv/bin/activate && export PYTHONPATH=/opt/paumr && python3 paumr/manage.py collectstatic
+ chdir: /opt/paumr
+ become_user: altar
+
+- name: Загрузка данных MITRE
+ shell:
+ cmd: source venv/bin/activate && export PYTHONPATH=/opt/paumr && cd paumr/ && python3 manage.py load_mitre_tags
+ chdir: /opt/paumr
+ become_user: altar
+ notify:
+ - Запуск ПАУМР

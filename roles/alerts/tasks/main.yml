@@ -1,0 +1,68 @@
+---
+- name: Создание временной папки для установки
+ file:
+ path: /tmp/elastalert
+ state: directory
+ owner: altar
+ group: altar
+
+- name: Копируем архив с программой
+ copy:
+ src: /tmp/alerts.tar.gz
+ dest: /tmp/alerts.tar.gz
+
+- name: Копируем архив с конфигами
+ copy:
+ src: /tmp/alerts_configs.zip
+ dest: /tmp/alerts_configs.zip
+  
+- name: Разархивируем программу в созданную папку
+ unarchive:
+ src: /tmp/alerts.tar.gz
+ dest: /tmp/elastalert/
+ remote_src: yes
+
+- name: Создаем папку для хранения конфига и правил
+ file:
+ path: /opt/{{ service }}/alerts
+ state: directory
+
+- name: Разархивируем конфиги в созданную папку
+ unarchive:
+ src: /tmp/alerts_configs.zip
+ dest: /opt/{{ service }}/alerts
+
+- name: Создаем сервис для запуска psus-alerts
+ file:
+ path: /etc/systemd/system/{{ service }}-alerts.service
+ state: touch
+
+- name: Заполняем его
+ blockinfile:
+ path: /etc/systemd/system/{{ service }}-alerts.service
+ block: |
+  [Unit]
+  Description=Alerts
+  After=multi-user.target
+  [Service]
+  Restart=always
+  User=altar
+  Group=altar
+  ExecStart=/usr/bin/python3 -m elastalert.elastalert --config /opt/{{ service }}/alerts/config.yaml
+  WorkDir=/home/altar/elastalert
+  [Install]
+  WantedBy=multi-user.target
+
+- name: Установка pip
+ shell:
+ cmd: pip3 install pip* --force-reinstall
+ chdir: /tmp/elastalert/
+ become_user: altar
+  
+- name: Установка pip пакетов
+ shell:
+ cmd: pip3 install * --force-reinstall
+ chdir: /tmp/elastalert
+ become_user: altar
+ notify:
+ - Перезапуск сервиса alerts

@@ -1,0 +1,45 @@
+---
+# tasks file for pov_agent
+- name: Сохраним старый конфиг pov_agent
+ copy:
+ src: /opt/pov/pov-agent/pov_agent/config.yml
+ dest: /tmp/config.yml
+ remote_src: true
+ ignore_errors: true
+
+- name: Создание временной папки для установки
+ file:
+ path: /tmp/pov_agent
+ state: directory
+
+- name: Копируем архив с программой
+ copy:
+ src: /tmp/pov_agent.tar.gz
+ dest: /tmp/pov_agent.tar.gz
+
+- name: Разархивируем архив
+ unarchive:
+ src: /tmp/pov_agent.tar.gz
+ dest: /tmp/pov_agent/
+
+- name: Запускаем скрипт установки программы
+ shell:
+ cmd: ./install.sh pov
+ chdir: /tmp/pov_agent/
+
+- name: Удалим временные файлы
+ file:
+ path: /tmp/pov_agent
+ state: absent
+
+- name: Удалим временные файлы
+ file:
+ path: /tmp/pov_agent.tar.gz
+ state: absent
+
+- name: Вернем старый конфиг pov_agent
+ copy:
+ dest: /opt/pov/pov-agent/pov_agent/config.yml
+ src: /tmp/config.yml
+ remote_src: true
+ ignore_errors: true

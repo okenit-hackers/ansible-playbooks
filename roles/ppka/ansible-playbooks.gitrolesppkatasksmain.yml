@@ -1,0 +1,134 @@
+---
+# tasks file for ppka
+- name: Удаление папки
+ file:
+ path: /tmp/ppka
+ state: absent
+
+- name: Остановка ppka
+ service:
+ name: ppka
+ state: stopped
+ ignore_errors: yes
+
+- name: Создание временной папки для установки
+ file:
+ path: /tmp/ppka
+ state: directory
+
+- name: Создание временной папки для установки
+ file:
+ path: /tmp/ppka/ppka_whl
+ state: directory
+
+- name: Копируем архив с программой
+ copy:
+ src: /tmp/ppka.tar.gz
+ dest: /tmp/ppka.tar.gz
+ owner: altar
+ group: altar
+ become_user: altar
+
+- name: Разархивируем программу в созданную папку /tmp/paumr
+ unarchive:
+ src: /tmp/ppka.tar.gz
+ dest: /tmp/ppka
+ remote_src: yes
+
+- name: Разархивируем программу в созданную папку /tmp/paumr
+ unarchive:
+ src: /tmp/ppka/ppka_whl.tar.gz
+ dest: /tmp/ppka/ppka_whl
+ remote_src: yes
+
+- name: Проверка наличия файла настроек
+ stat:
+ path: /opt/ppka/ppka/settings.py
+ register: settings_file_stat
+
+- name: Копирование файла настроек, если он существует
+ copy:
+ src: /opt/ppka/ppka/ppka/settings.py
+ dest: /tmp/ppka/ppka/ppka/settings.py
+ remote_src: yes
+ when: settings_file_stat.stat.exists
+
+- name: Удалим старую папку ppka
+ file:
+ path: /opt/ppka
+ state: absent
+ become: true
+
+- name: Создадим папку ppka
+ file:
+ path: /opt/ppka
+ state: directory
+ owner: altar
+ group: altar
+ become: true
+
+- name: Копирование папки
+ copy:
+ dest: /opt/ppka/
+ src: /tmp/ppka/
+ remote_src: yes
+ become_user: altar
+
+- name: Создадим venv
+ shell:
+ cmd: python3 -m venv venv
+ chdir: /opt/ppka
+ become_user: altar
+
+- name: Переходим в директорию с распакованными whl файлами и запускаем установку pip
+ shell:
+ cmd: source venv/bin/activate && pip3 install ppka_whl/pip*
+ chdir: /opt/ppka/
+ become_user: altar
+
+- name: Запускаем установку остальных whl файлов
+ shell:
+ cmd: source venv/bin/activate && pip3 install ppka_whl/*
+ chdir: /opt/ppka/
+ become_user: altar
+
+- name: Смена настроек в файле fir/settings.py для подключения
+ blockinfile:
+ path: /opt/ppka/ppka/ppka/settings.py
+ block: |
+  ALLOWED_HOSTS=["*"]
+  OPENSEARCH_HOST = '{{ opensearch_ip }}'
+  OPENSEARCH_PORT = os.environ.get('OPENSEARCH_PORT', '9200')
+  OPENSEARCH_USERNAME = os.environ.get('OPENSEARCH_USERNAME', 'admin')
+  OPENSEARCH_PASSWORD = os.environ.get('OPENSEARCH_PASSWORD', 'admin')
+  OPENSEARCH_CLIENT = OpenSearch(
+   [f'{OPENSEARCH_PROTOCOL}://{OPENSEARCH_HOST}:{OPENSEARCH_PORT}'],
+   http_auth=(OPENSEARCH_USERNAME, OPENSEARCH_PASSWORD),
+   verify_certs=False,
+   ssl_show_warn=False,
+  )
+  PAUMR_URL = '{{ paumr_ip }}'
+ when: not settings_file_stat.stat.exists
+ become_user: altar
+
+- name: Удалим сервис для запуска ppka
+ file:
+ path: /etc/systemd/system/ppka.service
+ state: absent
+
+- name: Создаем новый сервис файл
+ template:
+ src: service.j2
+ dest: /etc/systemd/system/ppka.service
+
+- name: systemctl daemon-reload
+ shell: systemctl daemon-reload
+ become: yes
+
+- name: Миграции
+ shell:
+ cmd: export PYTHONPATH=/opt/ppka && source venv/bin/activate && rm -f ppka/db.sqlite3 && python3 ppka/manage.py makemigrations && python3 ppka/manage.py migrate && echo "from django.contrib.auth import get_user_model; User = get_user_model(); User.objects.create_superuser('admin', 'admin@example.com', 'admin')" | python3 ppka/manage.py shell
+ chdir: /opt/ppka
+ become_user: altar
+ notify:
+ - Запуск PPKA

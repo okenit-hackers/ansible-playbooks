@@ -1,0 +1,78 @@
+---
+- block: # Начало блока, который выполнится, если install_nginx == true
+ - name: Копируем архив с установочными файлами nginx
+  copy:
+  src: /tmp/nginx.zip
+  dest: /tmp/nginx.zip
+
+ - name: Разархивируем nginx
+  unarchive:
+  src: /tmp/nginx.zip
+  dest: /tmp/
+
+ - name: Установка nginx
+  shell: dpkg -i /tmp/nginx/*.deb
+  ignore_errors: true
+  become: yes
+
+ - name: Копируем конфигурационный файл nginx
+  template:
+  src: nginx.conf.j2
+  dest: /etc/nginx/sites-enabled/default
+  vars:
+  server_ip: "{{ ansible_host }}"
+  notify:
+  - Перезапуск NGINX
+ when: install_nginx == true # Условие для выполнения блока
+
+- name: Копируем архив со статикой navbar
+ copy:
+ src: /tmp/psus_front.tar.gz
+ dest: /var/www/html/psus_front.tar.gz
+
+- name: Удаление старого билда navbar
+ file:
+ path: /var/www/html/navbar
+ state: absent
+
+- name: Удаление старого билда corelator
+ file:
+ path: /var/www/html/corelator
+ state: absent
+
+- name: Создание папки под static-files navbar
+ file:
+ path: /var/www/html/navbar
+ state: directory
+
+- name: Создание папки под static-files corelator
+ file:
+ path: /var/www/html/corelator
+ state: directory
+
+- name: Разархивируем статику
+ unarchive:
+ src: /var/www/html/psus_front.tar.gz
+ dest: /var/www/html/
+ remote_src: true
+
+- name: Разархивируем статику
+ unarchive:
+ src: /var/www/html/navbar.tar.gz
+ dest: /var/www/html/navbar/
+ remote_src: true
+
+- name: Разархивируем статику
+ unarchive:
+ src: /var/www/html/corelator_front.tar.gz
+ dest: /var/www/html/corelator/
+ remote_src: true
+
+- name: Удалим установочные файлы
+ file:
+ path:
+  - /var/www/html/navbar.tar.gz
+  - /var/www/html/corelator_front.tar.gz
+  - /var/www/html/psus_front.tar.gz
+  - /tmp/nginx.zip
+ state: absent

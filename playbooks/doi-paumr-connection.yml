@@ -1,0 +1,45 @@
+---
+- name: Установка stromReciever
+  hosts: '{{ paumr_host }}'
+  become: true
+
+  pre_tasks:
+  - name: Загрузка stromReceiver.zip
+  get_url:
+   url: http://192.168.5.119:8000/stromReceiver.zip
+   dest: /tmp/stromReceiver.zip
+  delegate_to: ansible_host
+
+  - name: Загрузка logstash.tar.gz
+  get_url:
+  url: http://192.168.5.119:8000/logstash.tar.gz
+  dest: /tmp/logstash.tar.gz
+  delegate_to: ansible_host
+
+  roles:
+  - ../roles/strom-receiver
+  - ../roles/logstash
+
+  post_tasks:
+  - name: Копируем конфигурационный файл logstash
+  template:
+  src: ../roles/strom-receiver/templates/logstash-sample.conf.j2
+  dest: /opt/{{ service }}/logstash/config/logstash-sample.conf
+  vars:
+  opensearch_ip: "{{ opensearch_ip }}"
+
+- name: Установка stromSender
+  hosts: '{{ psdoi_host }}'
+  become: true
+
+  pre_tasks:
+  - name: Загрузка stromSender.zip
+  get_url:
+   url: http://192.168.5.119:8000/stromSender.zip
+   dest: /tmp/stromSender.zip
+  delegate_to: ansible_host
+
+
+
+  roles:
+  - ../roles/strom-sender

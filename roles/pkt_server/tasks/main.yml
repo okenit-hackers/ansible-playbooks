@@ -1,0 +1,32 @@
+---
+# tasks file for pov_server
+- name: Создание временной папки для установки
+ file:
+ path: /tmp/pkt_server
+ state: directory
+
+- name: Копируем архив с программой
+ copy:
+ src: /tmp/pkt_server.tar.gz
+ dest: /tmp/pkt_server.tar.gz
+ 
+- name: Разархивируем архив
+ unarchive:
+ src: /tmp/pkt_server.tar.gz
+ dest: /tmp/pkt_server
+
+- name: Запускаем скрипт установки программы
+ shell:
+ cmd: ./install.sh
+ chdir: /tmp/pkt_server/
+
+- name: Удалим временные файлы
+ file:
+ path: /tmp/pkt_server
+ state: absent
+
+- name: Удалим временные файлы
+ file:
+ path: /tmp/pkt_server.tar.gz
+ state: absent
+ notify: pkt_server restart

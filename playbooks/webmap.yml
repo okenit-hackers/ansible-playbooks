@@ -1,0 +1,14 @@
+---
+- name: Установка webmap
+ hosts: '{{ hosts }}'
+ become: true
+ pre_tasks:
+ - name: Загрузка webmap_main.tar.gz
+  get_url:
+   url: http://192.168.5.119:8000/webmap_main.tar.gz
+   dest: /tmp/webmap_main.tar.gz
+  delegate_to: ansible_host
+
+ roles:
+  - ../roles/webmap
+

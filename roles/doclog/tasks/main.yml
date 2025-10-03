@@ -1,0 +1,45 @@
+---
+# tasks file for doclog
+#- name: Сохраним старый конфиг doclog
+# copy:
+# src: /opt/pov/pov-agent/doclog/config.yml
+# dest: /tmp/config.yml
+# remote_src: true
+# ignore_errors: true
+
+- name: Создание временной папки для установки
+ file:
+ path: /tmp/doclog
+ state: directory
+
+- name: Копируем архив с программой
+ copy:
+ src: /tmp/doclog.tar.gz
+ dest: /tmp/doclog.tar.gz
+
+- name: Разархивируем архив
+ unarchive:
+ src: /tmp/doclog.tar.gz
+ dest: /tmp/doclog/
+
+- name: Запускаем скрипт установки программы
+ shell:
+ cmd: ./install.sh
+ chdir: /tmp/doclog/
+
+- name: Удалим временные файлы
+ file:
+ path: /tmp/doclog
+ state: absent
+
+- name: Удалим временные файлы
+ file:
+ path: /tmp/doclog.tar.gz
+ state: absent
+
+#- name: Вернем старый конфиг doclog
+# copy:
+# dest: /opt/pov/pov-agent/doclog/config.yml
+# src: /tmp/config.yml
+# remote_src: true
+# ignore_errors: true

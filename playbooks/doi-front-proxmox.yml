@@ -1,0 +1,19 @@
+---
+- name: Установка psdoi_front
+ hosts: '{{ hosts }}'
+ become: true
+ pre_tasks:
+ - name: Загрузка psdoi_front.tar.gz
+  get_url:
+   url: http://192.168.5.119:8000/psdoi_front_proxmox.tar.gz
+   dest: /tmp/psdoi_front.tar.gz
+  delegate_to: ansible_host
+
+ - name: Загрузка nginx.zip
+  get_url:
+   url: http://192.168.5.119:8000/nginx.zip
+   dest: /tmp/nginx.zip
+  delegate_to: ansible_host
+
+ roles:
+  - ../roles/psdoi_front

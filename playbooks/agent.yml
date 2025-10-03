@@ -1,0 +1,14 @@
+---
+- name: Установка Agent
+ hosts: '{{ hosts }}'
+ become: true 
+
+ pre_tasks:
+ - name: Загрузка agent.tar.gz
+  get_url:
+  url: http://192.168.5.119:8000/agent_build.tar.gz
+  dest: /tmp/agent_build.tar.gz
+  delegate_to: ansible_host
+
+ roles:
+ - ../roles/agent

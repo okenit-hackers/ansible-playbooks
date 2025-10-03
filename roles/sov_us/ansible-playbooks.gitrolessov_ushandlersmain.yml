@@ -1,0 +1,6 @@
+---
+# handlers file for sov_us
+- name: Перезапуск сервиса sov_us
+ service:
+ name: sov_us
+ state: restarted

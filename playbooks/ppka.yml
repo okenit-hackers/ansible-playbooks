@@ -1,0 +1,19 @@
+---
+- name: Установка ppka
+ hosts: '{{ hosts }}'
+ become: true
+ pre_tasks:
+ - name: Удаление старого билда
+  file:
+  path: /tmp/ppka.tar.gz
+  state: absent
+  delegate_to: ansible_host
+
+ - name: Загрузка ppka.tar.gz
+  get_url:
+   url: http://192.168.5.119:8000/ppka.tar.gz
+   dest: /tmp/ppka.tar.gz
+  delegate_to: ansible_host
+
+ roles:
+ - ../roles/ppka

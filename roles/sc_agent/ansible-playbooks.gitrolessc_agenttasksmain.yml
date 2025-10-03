@@ -1,0 +1,46 @@
+---
+# tasks file for sc_agent
+
+- name: Сохраним старый конфиг pov_agent
+ copy:
+ src: /opt/psus/sc-agent/pov_agent/config.yml
+ dest: /tmp/config.yml
+ remote_src: true
+ ignore_errors: true
+
+- name: Создание временной папки для установки
+ file:
+ path: /tmp/sc-agent
+ state: directory
+
+- name: Копируем архив с программой
+ copy:
+ src: /tmp/sc_agent.tar.gz
+ dest: /tmp/sc_agent.tar.gz
+
+- name: Разархивируем архив
+ unarchive:
+ src: /tmp/sc_agent.tar.gz
+ dest: /tmp/sc-agent/
+
+- name: Запускаем скрипт установки программы
+ shell:
+ cmd: ./install.sh psus
+ chdir: /tmp/sc-agent/
+
+- name: Удалим временные файлы
+ file:
+ path: /tmp/sc-agent
+ state: absent
+
+- name: Удалим временные файлы
+ file:
+ path: /tmp/sc_agent.tar.gz
+ state: absent
+
+- name: Вернем старый конфиг sc_agent
+ copy:
+ dest: /opt/psus/sc-agent/pov_agent/config.yml
+ src: /tmp/config.yml
+ remote_src: true
+ ignore_errors: true

@@ -1,0 +1,149 @@
+# Okenit
+# /etc/nginx/sites-enabled/sites
+# 25.04.2024
+
+# OpenSearch dashboards
+upstream dashboard {
+  server localhost:5601;
+}
+
+# WebMap (сетевое окружение)
+upstream webmap {
+  server localhost:8084;
+}
+
+# API ПСУС-Manager
+upstream psus_manager {
+  server localhost:55000;
+}
+
+# База OpenSearch (indexer)
+upstream indexer {
+  server localhost:9200;
+}
+
+# API ElastAlert-Server
+upstream elastalert_api {
+  server localhost:3030;
+}
+
+# WebSocket ElastAlert-Server
+upstream elastalert_ws {
+  server localhost:3333;
+}
+
+# Общая конфигурация для NavBar
+server {
+ listen 80;
+ server_name 0.0.0.0; # Replace with your actual domain o
+ proxy_hide_header X-Frame-Options;
+
+ # Фронтенд NavBar
+ location / {
+  root /var/www/html/navbar/;
+  try_files $uri $uri/ /index.html;
+ }
+
+ # Конифгурация для NavBar
+ location /public {
+  alias /var/www/html/navbar/;
+ }
+
+ # Фронтенд OpenSearch Dashboards
+ location ^~ /kibana {
+  rewrite ^/kibana(.*) $1 break;
+
+  add_header X-Content-Type-Options nosniff;
+
+  proxy_pass http://dashboard/;
+  proxy_redirect default;
+ }
+
+ # Фронтенд корелятора
+ location /reaction {
+  add_header Access-Control-Allow-Origin *;
+  rewrite ^/(.*)$ http://$host:8087 redirect;
+ }
+
+ # Фронтенд WebMap
+ location /webmap {
+  rewrite ^/webmap http://$host:8084/ last;
+ }
+
+ # База данных OpenSearch (indexer)
+ location ^~ /indexer {
+  rewrite ^/indexer(.*)/$ $1 break;
+  proxy_pass http://indexer/;
+ }
+
+ # Бэкенд ПСУС-Manager
+ location ^~ /mainpage {
+  if ($request_method = 'OPTIONS') {
+   add_header 'Access-Control-Allow-Origin' '*';
+   add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS';
+   add_header 'Access-Control-Allow-Headers' 'Authorization, DNT, User-Agent, X-Requested-With, If-Modified-Since, Cache-Control, Content-Type, Range';
+   add_header 'Access-Control-Max-Age' 1728000;
+   add_header 'Content-Type' 'text/plain charset=UTF-8';
+   add_header 'Content-Length' 0;
+   return 204;
+  }
+  if ($request_method = 'GET') {
+   add_header 'Access-Control-Allow-Origin' '*' always;
+   add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS' always;
+   add_header 'Access-Control-Allow-Headers' 'DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range' always;
+   add_header 'Access-Control-Expose-Headers' 'Content-Length,Content-Range' always;
+
+   rewrite /mainpage/(.*) /$1 break;
+   proxy_pass https://psus_manager;
+   return 205;
+  }
+  if ($request_method = 'POST') {
+   add_header 'Access-Control-Allow-Origin' '*' always;
+   add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS' always;
+   add_header 'Access-Control-Allow-Headers' 'DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range' always;
+   add_header 'Access-Control-Expose-Headers' 'Content-Length,Content-Range' always;
+
+   rewrite /mainpage/(.*) /$1 break;
+   proxy_pass https://psus_manager;
+   return 205;
+  }
+  if ($request_method = 'PUT') {
+   add_header 'Access-Control-Allow-Origin' '*' always;
+   add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS' always;
+   add_header 'Access-Control-Allow-Headers' 'DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range' always;
+   add_header 'Access-Control-Expose-Headers' 'Content-Length,Content-Range' always;
+
+   rewrite /mainpage/(.*) /$1 break;
+   proxy_pass https://psus_manager;
+   return 205;
+  }
+ }
+}
+
+# Корелятор
+server {
+  listen 8087;
+  proxy_hide_header X-Frame-Options;
+
+  # Фронтенд корелятора
+  location / {
+   root /var/www/html/corelator;
+   index index.html;
+   try_files $uri $uri/ /index.html;
+  }
+
+  # Запросы на API elastalert-server
+  location /api/ {
+  rewrite ^/api/?(.*)$ /$1 break;
+  proxy_pass http://elastalert_api/;
+  }
+
+  # Запросы на WebSocket ElastAlert-Server
+  location /api-ws {
+  rewrite ^/api-ws/?(.*)$ /$1 break;
+
+  proxy_set_header Upgrade $http_upgrade;
+  proxy_set_header Connection "Upgrade";
+  proxy_pass http://elastalert_ws/;
+  }
+}

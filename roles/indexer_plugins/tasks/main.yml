@@ -1,0 +1,55 @@
+---
+# tasks file for indexer_plugins
+
+#- name: Копируем архив на сервер
+# copy:
+# src: /tmp/index-management.zip
+# dest: /tmp/index-management.zip
+# become: true
+#
+#- name: Копируем архив на сервер
+# copy:
+# src: /tmp/anomaly.zip
+# dest: /tmp/anomaly.zip
+# become: true
+
+- name: Копируем архив на сервер
+ copy:
+ src: /tmp/security.zip
+ dest: /tmp/security.zip
+ become: true
+
+#- name: Копируем архив на сервер
+# copy:
+# src: /tmp/job_scheduler.zip
+# dest: /tmp/job_scheduler.zip
+# become: true
+#
+#- name: Установка job_scheduler
+# shell:
+# cmd: bin/opensearch-plugin install --batch file:///tmp/job_scheduler.zip
+# chdir: /opt/{{ service }}/indexer/
+# become: true
+# ignore_errors: true
+
+#- name: Установка ism
+# shell:
+# cmd: bin/opensearch-plugin install --batch file:///tmp/index-management.zip.zip
+# chdir: /opt/{{ service }}/indexer/
+# become: true
+# ignore_errors: true
+
+- name: Установка security
+ shell:
+ cmd: bin/opensearch-plugin install --batch file:///tmp/security.zip
+ chdir: /opt/{{ service }}/indexer/
+ become: true
+
+#- name: Установка anomaly
+# shell:
+# cmd: bin/opensearch-plugin install --batch file:///tmp/anomaly.zip
+# chdir: /opt/{{ service }}/indexer/
+# become: true
+ ignore_errors: true
+ notify:
+ - Перезапуск сервиса indexer

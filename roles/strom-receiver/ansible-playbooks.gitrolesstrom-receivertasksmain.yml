@@ -1,0 +1,105 @@
+---
+- name: Остановка stromReceiver
+ shell:
+ cmd: "./RecvMultiPorts -m:3"
+ chdir: /opt/stromReceiver
+ become: yes
+ ignore_errors: yes
+
+- name: Удаление старой программы
+ file:
+ path: /opt/stromReceiver/
+ state: absent
+
+- name: Копирование программы на машину
+ copy:
+ src: /tmp/stromReceiver.zip
+ dest: /tmp/stromReceiver.zip
+
+- name: Создание папки для установки
+ file:
+ path: /opt/stromReceiver/
+ state: directory
+
+- name: Разархивирование строма
+ unarchive:
+ src: /tmp/stromReceiver.zip
+ dest: /opt/stromReceiver/
+
+- name: Создание папок
+ file:
+ path: /opt/stromReceiver/parsed_data/changedRights/{{ item }}
+ state: directory
+ owner: altar
+ group: altar
+ loop:
+ - bdu
+ - cve
+ - cwe
+ - ics
+ - capec
+ - loc
+ - edb
+ - rhsa
+
+
+- name: Создание папок
+ file:
+ path: /opt/stromReceiver/parsed_data/unchangedRights/{{ item }}
+ state: directory
+ owner: altar
+ group: altar
+ loop:
+ - cve_mitre
+ - cwe_mitre
+ - ibm_x_force
+ - loC
+ - owasp
+ - threats
+ - capec
+ - cve_cnvd
+ - cve_nvd
+ - exploit_db
+ - ics_alert
+ - nkcki_bulletins
+ - positive_technologies
+ - vulners
+ - cisco_security_advisories
+ - cve_debian
+ - cve_redhat
+ - huawei_bulletins
+ - ics_vul
+ - rootcheck
+ - rhsa_cve_redhat/CVE
+ - rhsa_cve_redhat/RHSA
+ - bdu
+
+- name: Удалим сервис для запуска скрипта смены прав
+ file:
+ path: /etc/systemd/system/change_rights.service
+ state: absent
+
+- name: Создаем сервис для запуска скрипта смены прав
+ file:
+ path: /etc/systemd/system/change_rights.service
+ state: touch
+
+- name: Заполняем его
+ blockinfile:
+ path: /etc/systemd/system/change_rights.service
+ block: |
+  [Unit]
+  Description=Change-Rights
+  [Service]
+  Type=simple
+  ExecStart=/usr/bin/bash /opt/stromReceiver/ownChanger.sh
+  WorkingDirectory=/opt/stromReceiver
+  [Install]
+  WantedBy=multi-user.target
+
+- name: Запуск stromReceiver
+ shell:
+ cmd: "./RecvMultiPorts"
+ chdir: /opt/stromReceiver
+ become: yes
+

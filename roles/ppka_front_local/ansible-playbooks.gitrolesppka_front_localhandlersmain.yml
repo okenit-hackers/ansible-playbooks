@@ -1,0 +1,7 @@
+---
+# handlers file for ppka_front_local
+- name: Перезапуск NGINX
+ service:
+ name: nginx
+ state: restarted
+ enabled: yes

@@ -1,0 +1,79 @@
+---
+# tasks file for logstash
+
+- name: Копируем старый конфиг logstash
+ copy:
+ src: /opt/{{ service }}/logstash/config/logstash-sample.conf
+ dest: /tmp/
+ remote_src: yes
+ ignore_errors: true
+
+- name: Удаление старой папки /opt/{{ service }}/logstash
+ file:
+ path: /opt/{{ service }}/logstash
+ state: absent
+
+- name: Создание папки /opt/{{ service }}
+ file:
+ path: /opt/{{ service }}
+ state: directory
+
+- name: Копируем архив c программой
+ copy:
+ src: /tmp/logstash.tar.gz
+ dest: /opt/{{ service }}/logstash.tar.gz
+ become: true
+ 
+- name: Разархивируем программу в папку /opt
+ unarchive:
+ src: /opt/{{ service }}/logstash.tar.gz
+ dest: /opt/{{ service }}/
+ remote_src: yes
+ 
+- name: Удаляем архив
+ file:
+ path: /opt/{{ service }}/logstash.tar.gz
+ state: absent
+ 
+- name: Переименуем папку
+ shell:
+ cmd: mv /opt/{{ service }}/logstash-8.6.3-SNAPSHOT /opt/{{ service }}/logstash
+ 
+- name: Смена владельца папки
+ file:
+ path: /opt/{{ service }}/logstash
+ owner: altar
+ group: altar
+ recurse: yes
+ state: directory
+ become: true
+
+- name: Возвращаем старый конфиг
+ copy:
+ src: /tmp/logstash-sample.conf
+ dest: /opt/{{ service }}/logstash/config/
+ remote_src: yes
+ ignore_errors: true
+
+- name: Создаем сервис для запуска logstash
+ file:
+ path: /etc/systemd/system/{{ service }}-logstash.service
+ state: touch
+ 
+- name: Заполняем сервис
+ blockinfile:
+ path: /etc/systemd/system/{{ service }}-logstash.service
+ block: |  
+  [Unit]
+  Description=logstash 
+  [Service]
+  Type=simple
+  User=altar
+  Group=altar
+  ExecStart=/opt/{{ service }}/logstash/bin/logstash -f config/logstash-sample.conf
+  WorkingDirectory=/opt/{{ service }}/logstash
+  [Install]
+  WantedBy=multi-user.target
+ notify:
+ - Запуск logstash
+ 

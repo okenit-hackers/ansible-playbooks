@@ -1,0 +1,135 @@
+---
+- name: Удаление папки
+ file:
+ path: /tmp/sov_us_whl
+ state: absent
+
+- name: Сохраняем старые sov_us.yaml
+ copy:
+ src: /opt/sov_us/sov_us.yaml
+ dest: /tmp/sov_us.yaml
+ remote_src: yes
+ owner: altar
+ group: altar
+ ignore_errors: true
+
+- name: Удаление старой папки
+ file:
+ path: /opt/sov_us/
+ state: absent
+ become: yes
+
+- name: Создание временной папки для установки
+ file:
+ path: /tmp/sov_us_whl
+ state: directory
+
+- name: Копируем архив с программой
+ copy:
+ src: /tmp/sov_us_whl.tar.gz
+ dest: /tmp/sov_us_whl.tar.gz
+ owner: altar
+ group: altar
+ become_user: altar
+
+- name: Копируем архив с программой
+ copy:
+ src: /tmp/sov_us_main.tar.gz
+ dest: /tmp/sov_us_main.tar.gz
+ owner: altar
+ group: altar
+ become_user: altar
+
+- name: Разархивируем программу в созданную папку /tmp/sov_us
+ unarchive:
+ src: /tmp/sov_us_whl.tar.gz
+ dest: /tmp/sov_us_whl
+ owner: altar
+ group: altar
+ remote_src: yes
+
+- name: Создаем сервис для запуска
+ file:
+ path: /etc/systemd/system/sov_us.service
+ state: touch
+
+- name: Заполнение файла сервиса
+ blockinfile:
+ path: /etc/systemd/system/sov_us.service
+ block: |
+  [Unit]
+  Description=SOV-US
+  After=multi-user.target
+  [Service]
+  User=altar
+  Group=altar
+  Restart=always
+  ExecStart=/opt/sov_us/venv/bin/python3 /opt/sov_us/scirius/manage.py runserver 0.0.0.0:8000
+  WorkingDirectory=/opt/sov_us/scirius
+  [Install]
+  WantedBy=multi-user.target
+
+- name: Создание папки /opt/sov_us
+ file:
+ path: /opt/sov_us
+ state: directory
+ owner: altar
+ group: altar
+
+- name: Создание venv и установка в него зависимостей
+ shell:
+ cmd: python3 -m venv venv && source venv/bin/activate && pip3 install /tmp/sov_us_whl/pip* --force-reinstall && pip3 install /tmp/sov_us_whl/* --force-reinstall
+ chdir: /opt/sov_us
+ become_user: altar
+
+- name: Разархивируем программу в созданную папку /opt/sov_us
+ unarchive:
+ src: /tmp/sov_us_main.tar.gz
+ dest: /opt/sov_us
+ remote_src: yes
+ become_user: altar
+
+- name: Проверить наличие папки
+ stat:
+ path: /opt/configs
+ register: folder_check
+
+- name: Скопировать папку, если она не существует
+ copy:
+ src: /opt/sov_us/configs
+ dest: /opt/
+ owner: altar
+ group: altar
+ remote_src: yes
+ when: not folder_check.stat.exists
+
+- name: Удалим папку /opt/sov_us/configs
+ file:
+ path: /opt/sov_us/configs
+ state: absent
+
+- name: Создадим папку logs
+ file:
+ path: /opt/sov_us/logs
+ state: directory
+ owner: altar
+ group: altar
+
+- name: Вернем sov_us.yaml
+ copy:
+ src: /tmp/sov_us.yaml
+ dest: /opt/sov_us/sov_us.yaml
+ remote_src: yes
+ become_user: altar
+ ignore_errors: true
+
+- name: Пересоздадим базу
+ shell:
+ cmd: source ../venv/bin/activate && make db
+ chdir: /opt/sov_us/scirius
+ become_user: altar
+ notify:
+ - Перезапуск сервиса sov_us
+
+
+...
